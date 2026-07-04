@@ -1,0 +1,458 @@
+:root {
+  color-scheme: dark;
+  --bg: #071016;
+  --panel: #111b22;
+  --panel-soft: #17242d;
+  --border: #3d515d;
+  --text: #f3f7f2;
+  --muted: #aab8bd;
+  --green: #93f06f;
+  --blue: #7bbdff;
+  --amber: #f0b42e;
+  --red: #ff6363;
+  --shadow: rgba(0, 0, 0, 0.42);
+  --mono: "Consolas", "Courier New", monospace;
+  --sans: "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(79, 130, 160, 0.2), transparent 28rem),
+    linear-gradient(135deg, #071016 0%, #0b151b 45%, #060b10 100%);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+button {
+  font: inherit;
+}
+
+.app-header {
+  padding: 1.2rem 1rem 0.8rem;
+  text-align: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.app-header p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(29rem, 1.1fr) minmax(20rem, 0.95fr);
+  grid-template-areas:
+    "addr memory side"
+    "data memory side"
+    "controls memory side"
+    "instructions instructions instructions";
+  gap: 0.9rem;
+  width: min(96rem, calc(100% - 1.5rem));
+  margin: 0 auto 1.5rem;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(28, 43, 52, 0.92), rgba(12, 20, 27, 0.94));
+  box-shadow: 0 16px 34px var(--shadow), inset 0 1px rgba(255, 255, 255, 0.06);
+  padding: 1rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.switch-panel:nth-of-type(1) {
+  grid-area: addr;
+}
+
+.switch-panel:nth-of-type(2) {
+  grid-area: data;
+}
+
+.controls-panel {
+  grid-area: controls;
+}
+
+.memory-panel {
+  grid-area: memory;
+  min-height: 38rem;
+}
+
+.side-column {
+  grid-area: side;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.9rem;
+}
+
+.instruction-panel {
+  grid-area: instructions;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-title-row span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.readout strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.readout-address strong {
+  color: var(--green);
+}
+
+.readout-data strong {
+  color: var(--blue);
+}
+
+.bit-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(2rem, 1fr));
+  gap: 0.65rem;
+}
+
+.bit-control {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+}
+
+.bit-weight,
+.bit-value {
+  font-family: var(--mono);
+  font-size: 1rem;
+}
+
+.toggle {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.55;
+  min-height: 4.8rem;
+  border: 1px solid #59646a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #777, #222 52%, #111);
+  box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.2), inset 0 -8px 18px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.toggle::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 12%;
+  height: 34%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08));
+  opacity: 0.4;
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #cfd5d7;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.toggle.on {
+  border-color: #8bd27a;
+  background: linear-gradient(180deg, #67ba58, #1e7333 52%, #12481f);
+}
+
+.toggle.on.data-toggle {
+  border-color: #8bc9ff;
+  background: linear-gradient(180deg, #5eb2f2, #1e609d 52%, #103d70);
+}
+
+.toggle.on::after {
+  top: 14%;
+  bottom: auto;
+}
+
+.binary-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.readout-data + .bit-row + .binary-readout {
+  color: var(--blue);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
+.button {
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.25), 0 8px 16px rgba(0, 0, 0, 0.26);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+  opacity: 0.65;
+}
+
+.button-load,
+.button-demo {
+  background: linear-gradient(#49a243, #28702d);
+}
+
+.button-step {
+  background: linear-gradient(#4b86ca, #285996);
+}
+
+.button-run {
+  background: linear-gradient(#f2bc2d, #b37700);
+}
+
+.button-stop,
+.button-reset {
+  background: linear-gradient(#c94c46, #8f2926);
+}
+
+.button-clear {
+  background: linear-gradient(#656c72, #333b42);
+}
+
+.memory-table-wrap {
+  max-height: 34.8rem;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+}
+
+.memory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+.memory-table th,
+.memory-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+  padding: 0.42rem 0.55rem;
+  text-align: center;
+}
+
+.memory-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #101a21;
+  color: #d8e0e4;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.memory-table td:first-child {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.memory-table tr.selected {
+  background: rgba(123, 189, 255, 0.22);
+}
+
+.memory-table tr.pc {
+  outline: 2px solid var(--amber);
+  outline-offset: -2px;
+}
+
+.memory-table tr.modified {
+  box-shadow: inset 4px 0 0 var(--red);
+}
+
+.console-panel {
+  min-height: 25rem;
+}
+
+.console-panel pre {
+  height: 100%;
+  min-height: 20rem;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: #020707;
+  color: var(--green);
+  padding: 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.96rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.status-panel dl {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  font-family: var(--mono);
+}
+
+.status-panel div {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.status-panel dt {
+  color: #edf3f4;
+}
+
+.status-panel dd {
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.55rem;
+  color: var(--green);
+  text-align: right;
+}
+
+.status-panel .state-ejecutando {
+  color: var(--amber);
+}
+
+.status-panel .state-error {
+  color: var(--red);
+}
+
+.status-panel .state-detenido {
+  color: var(--red);
+}
+
+.instruction-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(12rem, 1fr));
+  gap: 0.5rem 1rem;
+  font-family: var(--mono);
+}
+
+.instruction-grid div {
+  display: grid;
+  grid-template-columns: 2.4rem 6.3rem 1fr;
+  gap: 0.45rem;
+  align-items: baseline;
+}
+
+.instruction-grid code {
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.instruction-grid strong {
+  color: #fff;
+  font-weight: 500;
+}
+
+.instruction-grid span {
+  color: #d7dee1;
+}
+
+@media (max-width: 78rem) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "addr data"
+      "controls controls"
+      "memory memory"
+      "side side"
+      "instructions instructions";
+  }
+
+  .side-column {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+
+  .instruction-grid {
+    grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "addr"
+      "data"
+      "controls"
+      "memory"
+      "side"
+      "instructions";
+  }
+
+  .side-column {
+    grid-template-columns: 1fr;
+  }
+
+  .control-grid,
+  .instruction-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-panel div {
+    grid-template-columns: 1fr;
+  }
+
+  .status-panel dd {
+    text-align: left;
+  }
+}

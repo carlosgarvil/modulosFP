@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de computadora primitiva</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Simulador de computadora primitiva</h1>
+    <p>Introduce instrucciones y datos en memoria usando interruptores binarios.</p>
+  </header>
+
+  <main class="dashboard">
+    <section class="panel switch-panel">
+      <h2>1. Dirección de memoria</h2>
+      <div class="readout readout-address">
+        <span>Dirección actual</span>
+        <strong id="addressHex">00</strong>
+        <small id="addressDecimal">0</small>
+      </div>
+      <div class="bit-row" id="addressSwitches" aria-label="Interruptores de direccion"></div>
+      <div class="binary-readout" id="addressBinary">00000000</div>
+    </section>
+
+    <section class="panel switch-panel">
+      <h2>2. Datos (8 bits)</h2>
+      <div class="readout readout-data">
+        <span>Valor actual</span>
+        <strong id="dataHex">00</strong>
+        <small id="dataDecimal">0</small>
+      </div>
+      <div class="bit-row" id="dataSwitches" aria-label="Interruptores de datos"></div>
+      <div class="binary-readout">
+        <span id="dataBinary">00000000</span>
+        <span id="dataAscii">ASCII: .</span>
+      </div>
+    </section>
+
+    <section class="panel controls-panel">
+      <h2>Controles</h2>
+      <div class="control-grid">
+        <button class="button button-load" id="loadButton">LOAD</button>
+        <button class="button button-step" id="stepButton">STEP</button>
+        <button class="button button-run" id="runButton">RUN</button>
+        <button class="button button-stop" id="stopButton">STOP</button>
+        <button class="button button-reset" id="resetButton">RESET</button>
+        <button class="button button-clear" id="clearButton">CLEAR MEMORY</button>
+        <button class="button button-demo" id="demoButton">LOAD DEMO</button>
+      </div>
+    </section>
+
+    <section class="panel memory-panel">
+      <div class="panel-title-row">
+        <h2>Memoria</h2>
+        <span>256 bytes: 00 a FF</span>
+      </div>
+      <div class="memory-table-wrap">
+        <table class="memory-table">
+          <thead>
+            <tr>
+              <th>Dirección</th>
+              <th>Contenido (8 bits)</th>
+              <th>Hex</th>
+              <th>Interpretación</th>
+            </tr>
+          </thead>
+          <tbody id="memoryBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side-column">
+      <section class="panel console-panel">
+        <h2>Consola / salida</h2>
+        <pre id="consoleOutput" aria-live="polite"></pre>
+      </section>
+
+      <section class="panel status-panel">
+        <h2>Estado del sistema</h2>
+        <dl>
+          <div>
+            <dt>PC</dt>
+            <dd id="pcValue">00</dd>
+          </div>
+          <div>
+            <dt>IR</dt>
+            <dd id="irValue">00</dd>
+          </div>
+          <div>
+            <dt>AC</dt>
+            <dd id="acValue">00000000</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd id="stateValue" class="state-detenido">detenido</dd>
+          </div>
+        </dl>
+      </section>
+    </aside>
+
+    <section class="panel instruction-panel">
+      <h2>Instrucciones disponibles</h2>
+      <div class="instruction-grid">
+        <div><code>00</code><strong>HALT</strong><span>Detiene la ejecución.</span></div>
+        <div><code>01</code><strong>LOAD addr</strong><span>Carga memoria[addr] en AC.</span></div>
+        <div><code>02</code><strong>STORE addr</strong><span>Guarda AC en memoria[addr].</span></div>
+        <div><code>03</code><strong>ADD addr</strong><span>Suma memoria[addr] al AC.</span></div>
+        <div><code>04</code><strong>SUB addr</strong><span>Resta memoria[addr] al AC.</span></div>
+        <div><code>05</code><strong>JMP addr</strong><span>Salta a una dirección.</span></div>
+        <div><code>06</code><strong>JZ addr</strong><span>Salta si AC es 0.</span></div>
+        <div><code>07</code><strong>JNZ addr</strong><span>Salta si AC no es 0.</span></div>
+        <div><code>08</code><strong>OUT addr</strong><span>Escribe un caracter ASCII.</span></div>
+        <div><code>09</code><strong>OUTN addr</strong><span>Escribe un valor numerico.</span></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

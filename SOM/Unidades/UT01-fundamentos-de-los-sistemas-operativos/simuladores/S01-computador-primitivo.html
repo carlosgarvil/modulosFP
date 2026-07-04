@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de computadora primitiva</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #071016;
+  --panel: #111b22;
+  --panel-soft: #17242d;
+  --border: #3d515d;
+  --text: #f3f7f2;
+  --muted: #aab8bd;
+  --green: #93f06f;
+  --blue: #7bbdff;
+  --amber: #f0b42e;
+  --red: #ff6363;
+  --shadow: rgba(0, 0, 0, 0.42);
+  --mono: "Consolas", "Courier New", monospace;
+  --sans: "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(79, 130, 160, 0.2), transparent 28rem),
+    linear-gradient(135deg, #071016 0%, #0b151b 45%, #060b10 100%);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+button {
+  font: inherit;
+}
+
+.app-header {
+  padding: 1.2rem 1rem 0.8rem;
+  text-align: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.app-header p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(29rem, 1.1fr) minmax(20rem, 0.95fr);
+  grid-template-areas:
+    "addr memory side"
+    "data memory side"
+    "controls memory side"
+    "instructions instructions instructions";
+  gap: 0.9rem;
+  width: min(96rem, calc(100% - 1.5rem));
+  margin: 0 auto 1.5rem;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(28, 43, 52, 0.92), rgba(12, 20, 27, 0.94));
+  box-shadow: 0 16px 34px var(--shadow), inset 0 1px rgba(255, 255, 255, 0.06);
+  padding: 1rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.switch-panel:nth-of-type(1) {
+  grid-area: addr;
+}
+
+.switch-panel:nth-of-type(2) {
+  grid-area: data;
+}
+
+.controls-panel {
+  grid-area: controls;
+}
+
+.memory-panel {
+  grid-area: memory;
+  min-height: 38rem;
+}
+
+.side-column {
+  grid-area: side;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.9rem;
+}
+
+.instruction-panel {
+  grid-area: instructions;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-title-row span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.readout strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.readout-address strong {
+  color: var(--green);
+}
+
+.readout-data strong {
+  color: var(--blue);
+}
+
+.bit-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(2rem, 1fr));
+  gap: 0.65rem;
+}
+
+.bit-control {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+}
+
+.bit-weight,
+.bit-value {
+  font-family: var(--mono);
+  font-size: 1rem;
+}
+
+.toggle {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.55;
+  min-height: 4.8rem;
+  border: 1px solid #59646a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #777, #222 52%, #111);
+  box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.2), inset 0 -8px 18px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.toggle::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 12%;
+  height: 34%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08));
+  opacity: 0.4;
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #cfd5d7;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.toggle.on {
+  border-color: #8bd27a;
+  background: linear-gradient(180deg, #67ba58, #1e7333 52%, #12481f);
+}
+
+.toggle.on.data-toggle {
+  border-color: #8bc9ff;
+  background: linear-gradient(180deg, #5eb2f2, #1e609d 52%, #103d70);
+}
+
+.toggle.on::after {
+  top: 14%;
+  bottom: auto;
+}
+
+.binary-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.readout-data + .bit-row + .binary-readout {
+  color: var(--blue);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
+.button {
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.25), 0 8px 16px rgba(0, 0, 0, 0.26);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+  opacity: 0.65;
+}
+
+.button-load,
+.button-demo {
+  background: linear-gradient(#49a243, #28702d);
+}
+
+.button-step {
+  background: linear-gradient(#4b86ca, #285996);
+}
+
+.button-run {
+  background: linear-gradient(#f2bc2d, #b37700);
+}
+
+.button-stop,
+.button-reset {
+  background: linear-gradient(#c94c46, #8f2926);
+}
+
+.button-clear {
+  background: linear-gradient(#656c72, #333b42);
+}
+
+.memory-table-wrap {
+  max-height: 34.8rem;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+}
+
+.memory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+.memory-table th,
+.memory-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+  padding: 0.42rem 0.55rem;
+  text-align: center;
+}
+
+.memory-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #101a21;
+  color: #d8e0e4;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.memory-table td:first-child {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.memory-table tr.selected {
+  background: rgba(123, 189, 255, 0.22);
+}
+
+.memory-table tr.pc {
+  outline: 2px solid var(--amber);
+  outline-offset: -2px;
+}
+
+.memory-table tr.modified {
+  box-shadow: inset 4px 0 0 var(--red);
+}
+
+.console-panel {
+  min-height: 25rem;
+}
+
+.console-panel pre {
+  height: 100%;
+  min-height: 20rem;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: #020707;
+  color: var(--green);
+  padding: 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.96rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.status-panel dl {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  font-family: var(--mono);
+}
+
+.status-panel div {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.status-panel dt {
+  color: #edf3f4;
+}
+
+.status-panel dd {
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.55rem;
+  color: var(--green);
+  text-align: right;
+}
+
+.status-panel .state-ejecutando {
+  color: var(--amber);
+}
+
+.status-panel .state-error {
+  color: var(--red);
+}
+
+.status-panel .state-detenido {
+  color: var(--red);
+}
+
+.instruction-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(12rem, 1fr));
+  gap: 0.5rem 1rem;
+  font-family: var(--mono);
+}
+
+.instruction-card {
+  display: grid;
+  grid-template-columns: 2.4rem 6.3rem 1fr;
+  gap: 0.45rem;
+  align-items: baseline;
+  min-height: 2.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.14);
+  color: inherit;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.instruction-card:hover,
+.instruction-card:focus-visible {
+  border-color: var(--blue);
+  background: rgba(123, 189, 255, 0.13);
+  outline: none;
+}
+
+.instruction-grid code {
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+.instruction-grid strong {
+  color: #fff;
+  font-weight: 500;
+}
+
+.instruction-grid span {
+  color: #d7dee1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(1, 5, 8, 0.76);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.instruction-modal {
+  position: relative;
+  width: min(42rem, 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(160deg, #1b2a33, #091117);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  padding: 1.25rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover,
+.modal-close:focus-visible {
+  border-color: var(--blue);
+  outline: none;
+}
+
+.modal-code {
+  display: inline-grid;
+  place-items: center;
+  min-width: 3rem;
+  min-height: 2.25rem;
+  border: 1px solid rgba(147, 240, 111, 0.45);
+  border-radius: 6px;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.instruction-modal h2 {
+  margin: 0.75rem 2.5rem 0.45rem 0;
+  font-size: 1.7rem;
+}
+
+.instruction-modal p {
+  margin: 0 0 1rem;
+  color: #dbe5e8;
+  line-height: 1.5;
+}
+
+.modal-details {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.modal-details div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  padding-top: 0.7rem;
+}
+
+.modal-details dt {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.modal-details dd {
+  margin: 0;
+  color: #edf3f4;
+  line-height: 1.45;
+}
+
+.modal-details code {
+  color: var(--green);
+  font-family: var(--mono);
+}
+
+@media (max-width: 78rem) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "addr data"
+      "controls controls"
+      "memory memory"
+      "side side"
+      "instructions instructions";
+  }
+
+  .side-column {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+
+  .instruction-grid {
+    grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "addr"
+      "data"
+      "controls"
+      "memory"
+      "side"
+      "instructions";
+  }
+
+  .side-column {
+    grid-template-columns: 1fr;
+  }
+
+  .control-grid,
+  .instruction-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instruction-card,
+  .modal-details div {
+    grid-template-columns: 1fr;
+  }
+
+  .status-panel div {
+    grid-template-columns: 1fr;
+  }
+
+  .status-panel dd {
+    text-align: left;
+  }
+}
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <h1>Simulador de computadora primitiva</h1>
+    <p>Introduce instrucciones y datos en memoria usando interruptores binarios.</p>
+  </header>
+
+  <main class="dashboard">
+    <section class="panel switch-panel">
+      <h2>1. Dirección de memoria</h2>
+      <div class="readout readout-address">
+        <span>Dirección actual</span>
+        <strong id="addressHex">00</strong>
+        <small id="addressDecimal">0</small>
+      </div>
+      <div class="bit-row" id="addressSwitches" aria-label="Interruptores de direccion"></div>
+      <div class="binary-readout" id="addressBinary">00000000</div>
+    </section>
+
+    <section class="panel switch-panel">
+      <h2>2. Datos (8 bits)</h2>
+      <div class="readout readout-data">
+        <span>Valor actual</span>
+        <strong id="dataHex">00</strong>
+        <small id="dataDecimal">0</small>
+      </div>
+      <div class="bit-row" id="dataSwitches" aria-label="Interruptores de datos"></div>
+      <div class="binary-readout">
+        <span id="dataBinary">00000000</span>
+        <span id="dataAscii">ASCII: .</span>
+      </div>
+    </section>
+
+    <section class="panel controls-panel">
+      <h2>Controles</h2>
+      <div class="control-grid">
+        <button class="button button-load" id="loadButton">LOAD</button>
+        <button class="button button-step" id="stepButton">STEP</button>
+        <button class="button button-run" id="runButton">RUN</button>
+        <button class="button button-stop" id="stopButton">STOP</button>
+        <button class="button button-reset" id="resetButton">RESET</button>
+        <button class="button button-clear" id="clearButton">CLEAR MEMORY</button>
+        <button class="button button-demo" id="demoButton">LOAD DEMO</button>
+      </div>
+    </section>
+
+    <section class="panel memory-panel">
+      <div class="panel-title-row">
+        <h2>Memoria</h2>
+        <span>256 bytes: 00 a FF</span>
+      </div>
+      <div class="memory-table-wrap">
+        <table class="memory-table">
+          <thead>
+            <tr>
+              <th>Dirección</th>
+              <th>Contenido (8 bits)</th>
+              <th>Hex</th>
+              <th>Interpretación</th>
+            </tr>
+          </thead>
+          <tbody id="memoryBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side-column">
+      <section class="panel console-panel">
+        <h2>Consola / salida</h2>
+        <pre id="consoleOutput" aria-live="polite"></pre>
+      </section>
+
+      <section class="panel status-panel">
+        <h2>Estado del sistema</h2>
+        <dl>
+          <div>
+            <dt>PC</dt>
+            <dd id="pcValue">00</dd>
+          </div>
+          <div>
+            <dt>IR</dt>
+            <dd id="irValue">00</dd>
+          </div>
+          <div>
+            <dt>AC</dt>
+            <dd id="acValue">00000000</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd id="stateValue" class="state-detenido">detenido</dd>
+          </div>
+        </dl>
+      </section>
+    </aside>
+
+    <section class="panel instruction-panel">
+      <h2>Instrucciones disponibles</h2>
+      <div class="instruction-grid">
+        <button class="instruction-card" type="button" data-instruction="00"><code>00</code><strong>HALT</strong><span>Detiene la ejecución.</span></button>
+        <button class="instruction-card" type="button" data-instruction="01"><code>01</code><strong>LOAD addr</strong><span>Carga memoria[addr] en AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="02"><code>02</code><strong>STORE addr</strong><span>Guarda AC en memoria[addr].</span></button>
+        <button class="instruction-card" type="button" data-instruction="03"><code>03</code><strong>ADD addr</strong><span>Suma memoria[addr] al AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="04"><code>04</code><strong>SUB addr</strong><span>Resta memoria[addr] al AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="05"><code>05</code><strong>JMP addr</strong><span>Salta a una dirección.</span></button>
+        <button class="instruction-card" type="button" data-instruction="06"><code>06</code><strong>JZ addr</strong><span>Salta si AC es 0.</span></button>
+        <button class="instruction-card" type="button" data-instruction="07"><code>07</code><strong>JNZ addr</strong><span>Salta si AC no es 0.</span></button>
+        <button class="instruction-card" type="button" data-instruction="08"><code>08</code><strong>OUT addr</strong><span>Escribe un carácter ASCII.</span></button>
+        <button class="instruction-card" type="button" data-instruction="09"><code>09</code><strong>OUTN addr</strong><span>Escribe un valor numérico.</span></button>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="instructionModal" hidden>
+    <section class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalCloseButton" type="button" aria-label="Cerrar explicación">×</button>
+      <div class="modal-code" id="modalCode">00</div>
+      <h2 id="modalTitle">HALT</h2>
+      <p id="modalSummary"></p>
+      <dl class="modal-details">
+        <div>
+          <dt>Formato</dt>
+          <dd id="modalFormat"></dd>
+        </div>
+        <div>
+          <dt>Segundo byte</dt>
+          <dd id="modalOperand"></dd>
+        </div>
+        <div>
+          <dt>Efecto en la CPU</dt>
+          <dd id="modalEffect"></dd>
+        </div>
+        <div>
+          <dt>Ejemplo</dt>
+          <dd><code id="modalExample"></code></dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+
+  <script>
+const BYTE_SIZE = 256;
+const RUN_DELAY = 450;
+const BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
+
+const memory = new Uint8Array(BYTE_SIZE);
+let addressBits = Array(8).fill(0);
+let dataBits = Array(8).fill(0);
+let pc = 0;
+let ir = 0;
+let ac = 0;
+let state = "detenido";
+let lastModified = null;
+let runTimer = null;
+
+const els = {
+  addressSwitches: document.getElementById("addressSwitches"),
+  dataSwitches: document.getElementById("dataSwitches"),
+  addressHex: document.getElementById("addressHex"),
+  addressDecimal: document.getElementById("addressDecimal"),
+  addressBinary: document.getElementById("addressBinary"),
+  dataHex: document.getElementById("dataHex"),
+  dataDecimal: document.getElementById("dataDecimal"),
+  dataBinary: document.getElementById("dataBinary"),
+  dataAscii: document.getElementById("dataAscii"),
+  memoryBody: document.getElementById("memoryBody"),
+  consoleOutput: document.getElementById("consoleOutput"),
+  pcValue: document.getElementById("pcValue"),
+  irValue: document.getElementById("irValue"),
+  acValue: document.getElementById("acValue"),
+  stateValue: document.getElementById("stateValue"),
+  loadButton: document.getElementById("loadButton"),
+  stepButton: document.getElementById("stepButton"),
+  runButton: document.getElementById("runButton"),
+  stopButton: document.getElementById("stopButton"),
+  resetButton: document.getElementById("resetButton"),
+  clearButton: document.getElementById("clearButton"),
+  demoButton: document.getElementById("demoButton"),
+  instructionModal: document.getElementById("instructionModal"),
+  modalCloseButton: document.getElementById("modalCloseButton"),
+  modalCode: document.getElementById("modalCode"),
+  modalTitle: document.getElementById("modalTitle"),
+  modalSummary: document.getElementById("modalSummary"),
+  modalFormat: document.getElementById("modalFormat"),
+  modalOperand: document.getElementById("modalOperand"),
+  modalEffect: document.getElementById("modalEffect"),
+  modalExample: document.getElementById("modalExample")
+};
+
+const instructionNames = {
+  0x00: "HALT",
+  0x01: "LOAD",
+  0x02: "STORE",
+  0x03: "ADD",
+  0x04: "SUB",
+  0x05: "JMP",
+  0x06: "JZ",
+  0x07: "JNZ",
+  0x08: "OUT",
+  0x09: "OUTN"
+};
+
+const instructionHelp = {
+  "00": {
+    title: "HALT",
+    summary: "Detiene la ejecución del programa. Sirve para indicar a la CPU que ya no debe seguir leyendo más instrucciones.",
+    format: "00 00",
+    operand: "No necesita dirección. En este simulador se puede dejar un segundo byte, pero la CPU lo ignora.",
+    effect: "El estado pasa a detenido. PC e IR muestran la última instrucción ejecutada.",
+    example: "08: 00 00  ; detener el programa"
+  },
+  "01": {
+    title: "LOAD addr",
+    summary: "Carga en el acumulador el byte guardado en una dirección de memoria.",
+    format: "01 addr",
+    operand: "El segundo byte es una dirección de memoria. Por ejemplo, 20 significa leer memoria[20].",
+    effect: "AC recibe el contenido de memoria[addr]. Después, PC avanza 2 posiciones.",
+    example: "00: 01 20  ; AC = memoria[20]"
+  },
+  "02": {
+    title: "STORE addr",
+    summary: "Guarda el valor actual del acumulador en una posición de memoria.",
+    format: "02 addr",
+    operand: "El segundo byte indica la dirección donde se escribirá el contenido de AC.",
+    effect: "memoria[addr] recibe AC. Después, PC avanza 2 posiciones.",
+    example: "04: 02 22  ; memoria[22] = AC"
+  },
+  "03": {
+    title: "ADD addr",
+    summary: "Suma al acumulador el byte guardado en una dirección de memoria.",
+    format: "03 addr",
+    operand: "El segundo byte es la dirección del dato que se va a sumar.",
+    effect: "AC = AC + memoria[addr]. Si el resultado supera 255, se conserva solo el resultado módulo 256.",
+    example: "02: 03 21  ; AC = AC + memoria[21]"
+  },
+  "04": {
+    title: "SUB addr",
+    summary: "Resta al acumulador el byte guardado en una dirección de memoria.",
+    format: "04 addr",
+    operand: "El segundo byte es la dirección del dato que se va a restar.",
+    effect: "AC = AC - memoria[addr]. El resultado se mantiene dentro de 8 bits.",
+    example: "02: 04 21  ; AC = AC - memoria[21]"
+  },
+  "05": {
+    title: "JMP addr",
+    summary: "Cambia el flujo del programa saltando directamente a otra dirección.",
+    format: "05 addr",
+    operand: "El segundo byte es la nueva dirección que recibirá el PC.",
+    effect: "PC pasa a valer addr. No avanza automáticamente 2 posiciones.",
+    example: "10: 05 00  ; volver a la dirección 00"
+  },
+  "06": {
+    title: "JZ addr",
+    summary: "Salta a otra dirección solo si el acumulador vale cero.",
+    format: "06 addr",
+    operand: "El segundo byte es la dirección de destino si AC es 0.",
+    effect: "Si AC es 0, PC = addr. Si AC no es 0, PC avanza 2 posiciones.",
+    example: "10: 06 18  ; saltar a 18 si AC es cero"
+  },
+  "07": {
+    title: "JNZ addr",
+    summary: "Salta a otra dirección solo si el acumulador no vale cero.",
+    format: "07 addr",
+    operand: "El segundo byte es la dirección de destino si AC no es 0.",
+    effect: "Si AC no es 0, PC = addr. Si AC es 0, PC avanza 2 posiciones.",
+    example: "10: 07 04  ; saltar a 04 si AC no es cero"
+  },
+  "08": {
+    title: "OUT addr",
+    summary: "Escribe en la consola el carácter ASCII almacenado en una posición de memoria.",
+    format: "08 addr",
+    operand: "El segundo byte es la dirección del dato que se interpretará como carácter ASCII.",
+    effect: "La consola muestra el carácter de memoria[addr]. Después, PC avanza 2 posiciones.",
+    example: "06: 08 30  ; mostrar el carácter guardado en 30"
+  },
+  "09": {
+    title: "OUTN addr",
+    summary: "Escribe en la consola el valor numérico almacenado en una posición de memoria.",
+    format: "09 addr",
+    operand: "El segundo byte es la dirección del dato que se mostrará como número decimal.",
+    effect: "La consola muestra memoria[addr] como número. Después, PC avanza 2 posiciones.",
+    example: "06: 09 22  ; mostrar el número guardado en 22"
+  }
+};
+
+function toHex(value) {
+  return value.toString(16).toUpperCase().padStart(2, "0");
+}
+
+function toBinary(value) {
+  return value.toString(2).padStart(8, "0");
+}
+
+function bitsToValue(bits) {
+  return bits.reduce((sum, bit, index) => sum + bit * BIT_WEIGHTS[index], 0);
+}
+
+function printableAscii(value) {
+  return value >= 32 && value <= 126 ? String.fromCharCode(value) : ".";
+}
+
+function selectedAddress() {
+  return bitsToValue(addressBits);
+}
+
+function selectedData() {
+  return bitsToValue(dataBits);
+}
+
+function logLine(text = "") {
+  els.consoleOutput.textContent += `${text}\n`;
+  els.consoleOutput.scrollTop = els.consoleOutput.scrollHeight;
+}
+
+function openInstructionModal(code) {
+  const help = instructionHelp[code];
+  if (!help) {
+    return;
+  }
+
+  els.modalCode.textContent = code;
+  els.modalTitle.textContent = help.title;
+  els.modalSummary.textContent = help.summary;
+  els.modalFormat.textContent = help.format;
+  els.modalOperand.textContent = help.operand;
+  els.modalEffect.textContent = help.effect;
+  els.modalExample.textContent = help.example;
+  els.instructionModal.hidden = false;
+  els.modalCloseButton.focus();
+}
+
+function closeInstructionModal() {
+  els.instructionModal.hidden = true;
+}
+
+function setState(nextState) {
+  state = nextState;
+  els.stateValue.textContent = nextState;
+  els.stateValue.className = "";
+  els.stateValue.classList.add(`state-${nextState}`);
+}
+
+function createSwitches(container, bits, type) {
+  container.innerHTML = "";
+  BIT_WEIGHTS.forEach((weight, index) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "bit-control";
+
+    const label = document.createElement("div");
+    label.className = "bit-weight";
+    label.textContent = weight;
+
+    const button = document.createElement("button");
+    button.className = `toggle ${type}-toggle`;
+    button.type = "button";
+    const switchGroup = type === "address" ? "dirección" : "datos";
+    button.setAttribute("aria-label", `Interruptor de ${switchGroup}, peso ${weight}`);
+    button.addEventListener("click", () => {
+      bits[index] = bits[index] ? 0 : 1;
+      updateInterface();
+    });
+
+    const value = document.createElement("div");
+    value.className = "bit-value";
+    value.textContent = "0";
+
+    wrapper.append(label, button, value);
+    container.appendChild(wrapper);
+  });
+}
+
+function createMemoryTable() {
+  els.memoryBody.innerHTML = "";
+  for (let address = 0; address < BYTE_SIZE; address += 1) {
+    const row = document.createElement("tr");
+    row.dataset.address = String(address);
+    row.addEventListener("click", () => {
+      addressBits = toBinary(address).split("").map(Number);
+      updateInterface();
+    });
+
+    row.innerHTML = `
+      <td>${toHex(address)}</td>
+      <td data-cell="binary"></td>
+      <td data-cell="hex"></td>
+      <td data-cell="meaning"></td>
+    `;
+    els.memoryBody.appendChild(row);
+  }
+}
+
+function interpretation(address) {
+  const value = memory[address];
+  const next = memory[(address + 1) % BYTE_SIZE];
+  if (instructionNames[value]) {
+    const opcode = value === 0 ? "HALT" : `${instructionNames[value]} ${toHex(next)}`;
+    return `${opcode} / dato ${value}`;
+  }
+  if (value === 0) {
+    return "HALT / dato 0";
+  }
+  return `dato ${value} / '${printableAscii(value)}'`;
+}
+
+function updateSwitchVisuals(container, bits) {
+  [...container.children].forEach((wrapper, index) => {
+    const isOn = bits[index] === 1;
+    wrapper.querySelector(".toggle").classList.toggle("on", isOn);
+    wrapper.querySelector(".bit-value").textContent = isOn ? "1" : "0";
+  });
+}
+
+function updateMemoryRows() {
+  const selected = selectedAddress();
+  for (const row of els.memoryBody.rows) {
+    const address = Number(row.dataset.address);
+    row.classList.toggle("selected", address === selected);
+    row.classList.toggle("pc", address === pc);
+    row.classList.toggle("modified", address === lastModified);
+    row.querySelector('[data-cell="binary"]').textContent = toBinary(memory[address]);
+    row.querySelector('[data-cell="hex"]').textContent = toHex(memory[address]);
+    row.querySelector('[data-cell="meaning"]').textContent = interpretation(address);
+  }
+}
+
+function updateInterface() {
+  const address = selectedAddress();
+  const data = selectedData();
+
+  updateSwitchVisuals(els.addressSwitches, addressBits);
+  updateSwitchVisuals(els.dataSwitches, dataBits);
+
+  els.addressHex.textContent = toHex(address);
+  els.addressDecimal.textContent = String(address);
+  els.addressBinary.textContent = toBinary(address);
+
+  els.dataHex.textContent = toHex(data);
+  els.dataDecimal.textContent = String(data);
+  els.dataBinary.textContent = toBinary(data);
+  els.dataAscii.textContent = `ASCII: ${printableAscii(data)}`;
+
+  els.pcValue.textContent = toHex(pc);
+  els.irValue.textContent = toHex(ir);
+  els.acValue.textContent = toBinary(ac);
+
+  updateMemoryRows();
+}
+
+function loadSelectedByte() {
+  const address = selectedAddress();
+  const data = selectedData();
+  memory[address] = data;
+  lastModified = address;
+  logLine(`> LOAD en dirección ${toHex(address)}: ${toBinary(data)} (${toHex(data)})`);
+  updateInterface();
+}
+
+function stopRun() {
+  if (runTimer) {
+    clearInterval(runTimer);
+    runTimer = null;
+  }
+  if (state === "ejecutando") {
+    setState("detenido");
+  }
+  updateInterface();
+}
+
+function executeStep() {
+  if (state === "error") {
+    return;
+  }
+
+  ir = memory[pc];
+  const operand = memory[(pc + 1) % BYTE_SIZE];
+  const oldPc = pc;
+
+  switch (ir) {
+    case 0x00:
+      logLine(`PC ${toHex(oldPc)}: HALT`);
+      stopRun();
+      setState("detenido");
+      break;
+    case 0x01:
+      ac = memory[operand];
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: LOAD ${toHex(operand)} -> AC=${toHex(ac)}`);
+      break;
+    case 0x02:
+      memory[operand] = ac;
+      lastModified = operand;
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: STORE ${toHex(operand)} <- ${toHex(ac)}`);
+      break;
+    case 0x03:
+      ac = (ac + memory[operand]) % BYTE_SIZE;
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: ADD ${toHex(operand)} -> AC=${toHex(ac)}`);
+      break;
+    case 0x04:
+      ac = (ac - memory[operand] + BYTE_SIZE) % BYTE_SIZE;
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: SUB ${toHex(operand)} -> AC=${toHex(ac)}`);
+      break;
+    case 0x05:
+      pc = operand;
+      logLine(`PC ${toHex(oldPc)}: JMP ${toHex(operand)}`);
+      break;
+    case 0x06:
+      pc = ac === 0 ? operand : (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: JZ ${toHex(operand)} ${ac === 0 ? "salta" : "continúa"}`);
+      break;
+    case 0x07:
+      pc = ac !== 0 ? operand : (pc + 2) % BYTE_SIZE;
+      logLine(`PC ${toHex(oldPc)}: JNZ ${toHex(operand)} ${ac !== 0 ? "salta" : "continúa"}`);
+      break;
+    case 0x08:
+      els.consoleOutput.textContent += printableAscii(memory[operand]);
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`  OUT ${toHex(operand)}`);
+      break;
+    case 0x09:
+      els.consoleOutput.textContent += String(memory[operand]);
+      pc = (pc + 2) % BYTE_SIZE;
+      logLine(`  OUTN ${toHex(operand)}`);
+      break;
+    default:
+      stopRun();
+      setState("error");
+      logLine(`ERROR: instrucción desconocida ${toHex(ir)} en ${toHex(oldPc)}`);
+      break;
+  }
+
+  updateInterface();
+}
+
+function runProgram() {
+  if (runTimer || state === "error") {
+    return;
+  }
+  setState("ejecutando");
+  logLine("> RUN");
+  runTimer = setInterval(() => {
+    executeStep();
+    if (state !== "ejecutando") {
+      stopRun();
+    }
+  }, RUN_DELAY);
+}
+
+function resetSystem() {
+  stopRun();
+  pc = 0;
+  ir = 0;
+  ac = 0;
+  lastModified = null;
+  setState("detenido");
+  els.consoleOutput.textContent = "Sistema inicializado.\nListo.\n";
+  updateInterface();
+}
+
+function clearMemory() {
+  stopRun();
+  memory.fill(0);
+  lastModified = null;
+  logLine("> CLEAR MEMORY");
+  updateInterface();
+}
+
+function loadDemo() {
+  stopRun();
+  memory.fill(0);
+
+  const program = {
+    0x00: 0x01, 0x01: 0x20,
+    0x02: 0x03, 0x03: 0x21,
+    0x04: 0x02, 0x05: 0x22,
+    0x06: 0x09, 0x07: 0x22,
+    0x08: 0x00, 0x09: 0x00,
+    0x20: 0x05,
+    0x21: 0x07,
+    0x22: 0x00
+  };
+
+  Object.entries(program).forEach(([address, value]) => {
+    memory[Number(address)] = value;
+  });
+
+  pc = 0;
+  ir = 0;
+  ac = 0;
+  lastModified = 0x22;
+  setState("detenido");
+  els.consoleOutput.textContent = "Demo cargada.\nPrograma: 5 + 7, guarda el resultado en 22 y lo muestra.\n";
+  updateInterface();
+}
+
+function bindControls() {
+  els.loadButton.addEventListener("click", loadSelectedByte);
+  els.stepButton.addEventListener("click", executeStep);
+  els.runButton.addEventListener("click", runProgram);
+  els.stopButton.addEventListener("click", stopRun);
+  els.resetButton.addEventListener("click", resetSystem);
+  els.clearButton.addEventListener("click", clearMemory);
+  els.demoButton.addEventListener("click", loadDemo);
+  document.querySelectorAll(".instruction-card").forEach((button) => {
+    button.addEventListener("click", () => openInstructionModal(button.dataset.instruction));
+  });
+  els.modalCloseButton.addEventListener("click", closeInstructionModal);
+  els.instructionModal.addEventListener("click", (event) => {
+    if (event.target === els.instructionModal) {
+      closeInstructionModal();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !els.instructionModal.hidden) {
+      closeInstructionModal();
+    }
+  });
+}
+
+function init() {
+  createSwitches(els.addressSwitches, addressBits, "address");
+  createSwitches(els.dataSwitches, dataBits, "data");
+  createMemoryTable();
+  bindControls();
+  resetSystem();
+}
+
+init();
+  </script>
+</body>
+</html>

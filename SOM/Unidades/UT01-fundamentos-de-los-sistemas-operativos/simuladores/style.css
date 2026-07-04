@@ -385,11 +385,26 @@ button {
   font-family: var(--mono);
 }
 
-.instruction-grid div {
+.instruction-card {
   display: grid;
   grid-template-columns: 2.4rem 6.3rem 1fr;
   gap: 0.45rem;
   align-items: baseline;
+  min-height: 2.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.14);
+  color: inherit;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.instruction-card:hover,
+.instruction-card:focus-visible {
+  border-color: var(--blue);
+  background: rgba(123, 189, 255, 0.13);
+  outline: none;
 }
 
 .instruction-grid code {
@@ -404,6 +419,105 @@ button {
 
 .instruction-grid span {
   color: #d7dee1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(1, 5, 8, 0.76);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.instruction-modal {
+  position: relative;
+  width: min(42rem, 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(160deg, #1b2a33, #091117);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  padding: 1.25rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover,
+.modal-close:focus-visible {
+  border-color: var(--blue);
+  outline: none;
+}
+
+.modal-code {
+  display: inline-grid;
+  place-items: center;
+  min-width: 3rem;
+  min-height: 2.25rem;
+  border: 1px solid rgba(147, 240, 111, 0.45);
+  border-radius: 6px;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.instruction-modal h2 {
+  margin: 0.75rem 2.5rem 0.45rem 0;
+  font-size: 1.7rem;
+}
+
+.instruction-modal p {
+  margin: 0 0 1rem;
+  color: #dbe5e8;
+  line-height: 1.5;
+}
+
+.modal-details {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.modal-details div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  padding-top: 0.7rem;
+}
+
+.modal-details dt {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.modal-details dd {
+  margin: 0;
+  color: #edf3f4;
+  line-height: 1.45;
+}
+
+.modal-details code {
+  color: var(--green);
+  font-family: var(--mono);
 }
 
 @media (max-width: 78rem) {
@@ -445,6 +559,11 @@ button {
 
   .control-grid,
   .instruction-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instruction-card,
+  .modal-details div {
     grid-template-columns: 1fr;
   }
 

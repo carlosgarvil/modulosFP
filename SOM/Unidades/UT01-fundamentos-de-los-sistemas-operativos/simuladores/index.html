@@ -103,19 +103,46 @@
     <section class="panel instruction-panel">
       <h2>Instrucciones disponibles</h2>
       <div class="instruction-grid">
-        <div><code>00</code><strong>HALT</strong><span>Detiene la ejecución.</span></div>
-        <div><code>01</code><strong>LOAD addr</strong><span>Carga memoria[addr] en AC.</span></div>
-        <div><code>02</code><strong>STORE addr</strong><span>Guarda AC en memoria[addr].</span></div>
-        <div><code>03</code><strong>ADD addr</strong><span>Suma memoria[addr] al AC.</span></div>
-        <div><code>04</code><strong>SUB addr</strong><span>Resta memoria[addr] al AC.</span></div>
-        <div><code>05</code><strong>JMP addr</strong><span>Salta a una dirección.</span></div>
-        <div><code>06</code><strong>JZ addr</strong><span>Salta si AC es 0.</span></div>
-        <div><code>07</code><strong>JNZ addr</strong><span>Salta si AC no es 0.</span></div>
-        <div><code>08</code><strong>OUT addr</strong><span>Escribe un caracter ASCII.</span></div>
-        <div><code>09</code><strong>OUTN addr</strong><span>Escribe un valor numerico.</span></div>
+        <button class="instruction-card" type="button" data-instruction="00"><code>00</code><strong>HALT</strong><span>Detiene la ejecución.</span></button>
+        <button class="instruction-card" type="button" data-instruction="01"><code>01</code><strong>LOAD addr</strong><span>Carga memoria[addr] en AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="02"><code>02</code><strong>STORE addr</strong><span>Guarda AC en memoria[addr].</span></button>
+        <button class="instruction-card" type="button" data-instruction="03"><code>03</code><strong>ADD addr</strong><span>Suma memoria[addr] al AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="04"><code>04</code><strong>SUB addr</strong><span>Resta memoria[addr] al AC.</span></button>
+        <button class="instruction-card" type="button" data-instruction="05"><code>05</code><strong>JMP addr</strong><span>Salta a una dirección.</span></button>
+        <button class="instruction-card" type="button" data-instruction="06"><code>06</code><strong>JZ addr</strong><span>Salta si AC es 0.</span></button>
+        <button class="instruction-card" type="button" data-instruction="07"><code>07</code><strong>JNZ addr</strong><span>Salta si AC no es 0.</span></button>
+        <button class="instruction-card" type="button" data-instruction="08"><code>08</code><strong>OUT addr</strong><span>Escribe un carácter ASCII.</span></button>
+        <button class="instruction-card" type="button" data-instruction="09"><code>09</code><strong>OUTN addr</strong><span>Escribe un valor numérico.</span></button>
       </div>
     </section>
   </main>
+
+  <div class="modal-backdrop" id="instructionModal" hidden>
+    <section class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalCloseButton" type="button" aria-label="Cerrar explicación">×</button>
+      <div class="modal-code" id="modalCode">00</div>
+      <h2 id="modalTitle">HALT</h2>
+      <p id="modalSummary"></p>
+      <dl class="modal-details">
+        <div>
+          <dt>Formato</dt>
+          <dd id="modalFormat"></dd>
+        </div>
+        <div>
+          <dt>Segundo byte</dt>
+          <dd id="modalOperand"></dd>
+        </div>
+        <div>
+          <dt>Efecto en la CPU</dt>
+          <dd id="modalEffect"></dd>
+        </div>
+        <div>
+          <dt>Ejemplo</dt>
+          <dd><code id="modalExample"></code></dd>
+        </div>
+      </dl>
+    </section>
+  </div>
 
   <script src="script.js"></script>
 </body>

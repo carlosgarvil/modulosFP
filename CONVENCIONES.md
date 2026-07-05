@@ -71,7 +71,6 @@ Después se trabajará sobre uno de los módulos disponibles. Actualmente:
 
 - `SOM`
 - `SOR`
-- `ProyectoDAX`
 
 Si el módulo de trabajo no queda indicado de forma explícita en la petición, el agente deberá preguntar en qué módulo se va a trabajar antes de crear, modificar o reorganizar materiales.
 

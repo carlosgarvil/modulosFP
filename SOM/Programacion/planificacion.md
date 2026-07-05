@@ -2,8 +2,8 @@
 
 | UT | Bloque | Horas aprox. |
 |---:|---|---:|
-| 1 | Fundamentos de los sistemas operativos | 18 |
-| 2 | Virtualización y laboratorio | 12 |
+| 1 | Fundamentos de los sistemas operativos | 15 |
+| 2 | Virtualización y laboratorio | 15 |
 | 3 | Instalación de sistemas operativos | 18 |
 | 4 | Windows: administración y configuración | 28 |
 | 5 | Windows: mantenimiento, seguridad y recuperación | 20 |
@@ -12,7 +12,7 @@
 | 8 | Despliegue e implantación de sistemas operativos (Periodo Dual) | |
 |  | **Total** | **140 h** |
 
-## UT1. Fundamentos de los sistemas operativos (18 h)
+## UT1. Fundamentos de los sistemas operativos (15 h)
 
 **Pregunta guía:** ¿Qué hace realmente un sistema operativo?
 
@@ -37,7 +37,7 @@
 - Exploración de un sistema de archivos.
 - Comparativa Windows/Linux.
 
-## UT2. Virtualización y laboratorio (12 h)
+## UT2. Virtualización y laboratorio (15 h)
 
 **Pregunta guía:** ¿Cómo podemos experimentar sin romper un ordenador?
 

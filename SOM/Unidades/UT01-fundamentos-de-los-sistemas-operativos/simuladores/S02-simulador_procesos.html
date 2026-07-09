@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulador de planificación de procesos - SOM</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#fff; --text:#1f2937; --muted:#6b7280; --line:#d1d5db;
+    --accent:#2563eb; --danger:#dc2626; --ok:#16a34a; --wait:#e5e7eb; --idle:#f3f4f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:20px 24px;background:#111827;color:white}
+  header h1{margin:0;font-size:1.45rem}.subtitle{margin:.35rem 0 0;color:#cbd5e1;font-size:.95rem}
+  main{max-width:1250px;margin:auto;padding:18px}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(15,23,42,.06)}
+  h2{margin:0 0 12px;font-size:1.08rem} h3{margin:18px 0 8px;font-size:.98rem}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 4px}
+  input,button,select{font:inherit} input[type="number"],input[type="text"]{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:white}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{border:0;border-radius:10px;padding:10px 12px;background:var(--accent);color:white;cursor:pointer;font-weight:650}button.secondary{background:#475569}button.ghost{background:#e5e7eb;color:#111827}button.danger{background:var(--danger)}button:disabled{opacity:.55;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left}th{color:#374151;background:#f9fafb}.small{font-size:.82rem;color:var(--muted)}
+  .simbar{margin:14px 0 18px}.barhead{display:flex;justify-content:space-between;gap:12px;margin-bottom:6px}.algoTitle{display:flex;align-items:center;gap:7px}.algoname{font-weight:750}.stats{font-size:.82rem;color:var(--muted)}
+  .helpBtn{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #bfdbfe;border-radius:50%;padding:0;background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:800;line-height:1}.helpBtn:hover{background:#dbeafe}.helpBtn:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+  .timeline{display:flex;align-items:stretch;min-height:44px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--idle)}
+  .slot{min-width:34px;flex:0 0 34px;border-right:1px solid rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-weight:750;font-size:.78rem;color:#111827;position:relative}.slot.idle{background:var(--idle);color:#9ca3af}.slot.activeStep{outline:3px solid #111827;z-index:2}
+  .timeaxis{display:flex;margin-top:3px}.tick{min-width:34px;flex:0 0 34px;font-size:.68rem;color:#6b7280;text-align:left}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pill{display:flex;align-items:center;gap:5px;font-size:.8rem;background:#f9fafb;border:1px solid var(--line);border-radius:999px;padding:4px 8px}.swatch{width:12px;height:12px;border-radius:3px}
+  .queuebox{margin-top:4px;font-size:.8rem;color:#4b5563}.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#eef2ff;padding:1px 5px;border-radius:5px}.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;font-size:.86rem;line-height:1.4}.checks label{display:flex;align-items:center;gap:8px;color:#111827;margin:6px 0}.metrics{overflow:auto}.metrics table{min-width:650px}.hidden{display:none}.error{color:var(--danger);font-size:.86rem;margin-top:8px}.ok{color:var(--ok)}
+  .modalBackdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.54);padding:18px;z-index:20}.modalBackdrop.open{display:flex}.modal{width:min(620px,100%);max-height:85vh;overflow:auto;background:white;border:1px solid var(--line);border-radius:12px;box-shadow:0 24px 60px rgba(15,23,42,.28)}.modalHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.modalHeader h2{margin:0}.closeBtn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;padding:0;background:#e5e7eb;color:#111827;font-size:1.2rem}.modalBody{padding:16px 18px;line-height:1.45}.modalBody h3{margin:14px 0 6px}.modalBody p{margin:0 0 10px}.modalBody ul{margin:6px 0 12px;padding-left:20px}.modalBody li{margin:4px 0}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.slot,.tick{min-width:28px;flex-basis:28px}.row{grid-template-columns:1fr 1fr}.timeline{overflow-x:auto}}
+</style>
+</head>
+<body>
+<header><h1>Simulador de planificación de procesos</h1><p class="subtitle">FCFS, SJF, Prioridades y Round Robin ejecutándose en paralelo.</p></header>
+<main>
+<div class="grid">
+<section class="card">
+  <h2>1. Procesos</h2>
+  <div class="row">
+    <div><label>Nombre</label><input id="pName" type="text" value="P1" /></div>
+    <div><label>Llegada</label><input id="pArrival" type="number" min="0" value="0" /></div>
+    <div><label>CPU</label><input id="pBurst" type="number" min="1" value="5" /></div>
+  </div>
+  <div class="row2">
+    <div><label>Prioridad</label><input id="pPriority" type="number" min="1" value="2" /></div>
+    <div style="display:flex;align-items:end"><button id="addBtn" style="width:100%">Añadir proceso</button></div>
+  </div>
+  <p class="small">Prioridad: número menor = más prioridad.</p>
+  <div id="err" class="error"></div>
+  <table id="processTable"><thead><tr><th>Proceso</th><th>Llegada</th><th>CPU</th><th>Prio.</th><th></th></tr></thead><tbody></tbody></table>
+  <div class="inline" style="margin-top:10px"><button class="ghost" id="sampleBtn">Cargar ejemplo</button><button class="danger" id="clearBtn">Vaciar</button></div>
+
+  <h2 style="margin-top:20px">2. Opciones</h2>
+  <div class="checks">
+    <label><input type="checkbox" id="preemptive"> Permitir apropiación <span class="small">(SJF → SRTF, Prioridades apropiativo)</span></label>
+  </div>
+  <div class="row2">
+    <div><label>Quantum Round Robin</label><input id="quantum" type="number" min="1" value="2"></div>
+    <div><label>Velocidad automática (ms)</label><input id="speed" type="number" min="100" value="650"></div>
+  </div>
+  <div class="inline" style="margin-top:14px"><button id="resetBtn" class="secondary">Preparar</button><button id="stepBtn">Paso a paso</button><button id="runBtn">Simular de golpe</button><button id="autoBtn" class="ghost">Auto</button></div>
+  <p class="small">Cada paso representa una unidad de tiempo. Las cuatro barras avanzan a la vez.</p>
+</section>
+
+<section class="card">
+  <h2>Visualización simultánea</h2>
+  <div class="note">Marca <strong>apropiación</strong> para que SJF pueda expulsar al proceso actual si llega otro más corto, y para que Prioridades pueda expulsarlo si llega uno más prioritario. Round Robin siempre usa quantum.</div>
+  <div id="simArea"></div>
+  <div class="legend" id="legend"></div>
+  <h3>Métricas finales</h3>
+  <div class="metrics" id="metrics"><p class="small">Ejecuta la simulación para ver tiempos de espera, retorno y respuesta.</p></div>
+</section>
+</div>
+</main>
+<div class="modalBackdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal">
+    <div class="modalHeader">
+      <h2 id="helpTitle">Ayuda</h2>
+      <button class="closeBtn" id="closeHelpBtn" type="button" aria-label="Cerrar ayuda">×</button>
+    </div>
+    <div class="modalBody" id="helpBody"></div>
+  </div>
+</div>
+<script>
+const colors=['#93c5fd','#86efac','#fca5a5','#fde68a','#c4b5fd','#67e8f9','#fdba74','#f0abfc','#bef264','#f9a8d4'];
+let processes=[];let sims={};let currentTime=0;let maxEnd=0;let timer=null;
+const algorithms=[
+  {id:'fcfs', name:'FCFS'},
+  {id:'sjf', name:'SJF'},
+  {id:'priority', name:'Prioridades'},
+  {id:'rr', name:'Round Robin'}
+];
+const helpTexts={
+  fcfs:{
+    title:'FCFS: First Come, First Served',
+    body:`<p>Ejecuta los procesos por orden de llegada. Cuando la CPU queda libre, entra el primer proceso que estaba esperando en la cola.</p>
+    <h3>Sin apropiación</h3>
+    <ul><li>Un proceso que empieza a ejecutarse conserva la CPU hasta terminar.</li><li>Es fácil de entender, pero puede provocar esperas largas si un proceso muy largo llega antes que otros cortos.</li></ul>
+    <h3>Con apropiación</h3>
+    <p>FCFS no cambia con la opción de apropiación en este simulador. Aunque llegue un proceso nuevo, no expulsa al que se está ejecutando.</p>`
+  },
+  sjf:{
+    title:'SJF / SRTF: trabajo más corto',
+    body:`<p>Da preferencia a los procesos que necesitan menos tiempo de CPU.</p>
+    <h3>Sin apropiación: SJF</h3>
+    <ul><li>Cuando la CPU queda libre, elige el proceso listo con menor CPU pendiente.</li><li>El proceso elegido se ejecuta hasta terminar, aunque llegue después otro más corto.</li></ul>
+    <h3>Con apropiación: SRTF</h3>
+    <ul><li>En cada llegada se compara el proceso nuevo con el que está ejecutándose.</li><li>Si aparece uno con menos tiempo restante, expulsa al actual y ocupa la CPU.</li></ul>`
+  },
+  priority:{
+    title:'Prioridades',
+    body:`<p>Elige según la prioridad indicada en la tabla. En este simulador, un número menor significa más prioridad.</p>
+    <h3>Sin apropiación</h3>
+    <ul><li>Cuando la CPU queda libre, entra el proceso listo con mejor prioridad.</li><li>Una vez empieza, termina aunque llegue otro proceso con prioridad superior.</li></ul>
+    <h3>Con apropiación</h3>
+    <ul><li>Si llega un proceso con un número de prioridad menor, expulsa al proceso actual.</li><li>El proceso expulsado vuelve a la cola con el tiempo de CPU que le quede pendiente.</li></ul>`
+  },
+  rr:{
+    title:'Round Robin',
+    body:`<p>Reparte la CPU por turnos de duración fija, llamada quantum. Está pensado para dar respuesta a varios procesos alternando entre ellos.</p>
+    <h3>Sin apropiación</h3>
+    <p>Round Robin siempre usa cambio de turno por quantum. Si un proceso no termina antes de agotar su quantum, vuelve al final de la cola.</p>
+    <h3>Con apropiación</h3>
+    <p>La casilla de apropiación no modifica Round Robin en este simulador. Su comportamiento depende del quantum configurado.</p>`
+  }
+};
+function cloneProcs(){return processes.map((p,i)=>({...p, remaining:p.burst, start:null, finish:null, color:colors[i%colors.length]}));}
+function err(t){document.getElementById('err').textContent=t||''}
+function renderTable(){const tb=document.querySelector('#processTable tbody');tb.innerHTML='';processes.forEach((p,i)=>{tb.insertAdjacentHTML('beforeend',`<tr><td><strong>${p.name}</strong></td><td>${p.arrival}</td><td>${p.burst}</td><td>${p.priority}</td><td><button class="ghost" onclick="removeProc(${i})">×</button></td></tr>`)});renderLegend();}
+window.removeProc=i=>{processes.splice(i,1);renderTable();prepare();}
+function addProcess(){const name=document.getElementById('pName').value.trim()||`P${processes.length+1}`;const arrival=+document.getElementById('pArrival').value;const burst=+document.getElementById('pBurst').value;const priority=+document.getElementById('pPriority').value;if(!Number.isInteger(arrival)||arrival<0||!Number.isInteger(burst)||burst<1||!Number.isInteger(priority)||priority<1){err('Revisa llegada, CPU y prioridad. Deben ser enteros válidos.');return}if(processes.some(p=>p.name===name)){err('Ya existe un proceso con ese nombre.');return}err('');processes.push({name,arrival,burst,priority});document.getElementById('pName').value=`P${processes.length+1}`;renderTable();prepare();}
+function loadSample(){processes=[{name:'P1',arrival:0,burst:8,priority:2},{name:'P2',arrival:1,burst:4,priority:1},{name:'P3',arrival:2,burst:2,priority:3},{name:'P4',arrival:3,burst:1,priority:1},{name:'P5',arrival:6,burst:3,priority:2}];renderTable();prepare();}
+function createSim(id){return {id, procs:cloneProcs(), timeline:[], ready:[], running:null, rrQuantumLeft:+document.getElementById('quantum').value, completed:0};}
+function prepare(){stopAuto();currentTime=0;sims={};algorithms.forEach(a=>sims[a.id]=createSim(a.id));maxEnd=processes.reduce((s,p)=>s+p.burst,0)+Math.min(...processes.map(p=>p.arrival).concat([0]));renderSim();renderMetrics(false);}
+function arrivals(sim,t){sim.procs.filter(p=>p.arrival===t).sort((a,b)=>a.arrival-b.arrival).forEach(p=>sim.ready.push(p));}
+function pickBest(ready, kind){if(!ready.length)return null;let best=0;for(let i=1;i<ready.length;i++){const a=ready[i],b=ready[best];if(kind==='sjf' && (a.remaining<b.remaining || (a.remaining===b.remaining && a.arrival<b.arrival)))best=i;if(kind==='priority' && (a.priority<b.priority || (a.priority===b.priority && a.arrival<b.arrival)))best=i;}return ready.splice(best,1)[0];}
+function stepSim(sim,t){const pre=document.getElementById('preemptive').checked;const q=Math.max(1,+document.getElementById('quantum').value||1);arrivals(sim,t);
+  if(sim.id==='sjf'&&pre&&sim.running&&sim.ready.some(p=>p.remaining<sim.running.remaining)){sim.ready.push(sim.running);sim.running=null;}
+  if(sim.id==='priority'&&pre&&sim.running&&sim.ready.some(p=>p.priority<sim.running.priority)){sim.ready.push(sim.running);sim.running=null;}
+  if(!sim.running){
+    if(sim.id==='fcfs') sim.running=sim.ready.shift()||null;
+    if(sim.id==='sjf') sim.running=pickBest(sim.ready,'sjf');
+    if(sim.id==='priority') sim.running=pickBest(sim.ready,'priority');
+    if(sim.id==='rr'){sim.running=sim.ready.shift()||null; sim.rrQuantumLeft=q;}
+  }
+  if(!sim.running){sim.timeline.push('IDLE');return;}
+  if(sim.running.start===null)sim.running.start=t;
+  sim.timeline.push(sim.running.name);sim.running.remaining--; if(sim.id==='rr')sim.rrQuantumLeft--;
+  if(sim.running.remaining===0){sim.running.finish=t+1;sim.completed++;sim.running=null;sim.rrQuantumLeft=q;}
+  else if(sim.id==='rr'&&sim.rrQuantumLeft===0){sim.ready.push(sim.running);sim.running=null;sim.rrQuantumLeft=q;}
+}
+function isDone(){return processes.length>0 && Object.values(sims).every(s=>s.completed===processes.length)}
+function stepAll(){if(!processes.length){err('Añade al menos un proceso.');return}if(Object.keys(sims).length===0)prepare();if(isDone())return;algorithms.forEach(a=>stepSim(sims[a.id],currentTime));currentTime++;renderSim();if(isDone()){renderMetrics(true);stopAuto();}}
+function runAll(){while(!isDone() && currentTime<1000)stepAll();renderMetrics(true)}
+function toggleAuto(){if(timer){stopAuto();return}document.getElementById('autoBtn').textContent='Pausar';timer=setInterval(()=>{if(isDone())stopAuto();else stepAll();},Math.max(100,+document.getElementById('speed').value||650));}
+function stopAuto(){if(timer){clearInterval(timer);timer=null;}document.getElementById('autoBtn').textContent='Auto';}
+function renderSim(){const area=document.getElementById('simArea');area.innerHTML='';algorithms.forEach(a=>{const sim=sims[a.id]||createSim(a.id);const label=a.id==='sjf'&&document.getElementById('preemptive').checked?'SJF / SRTF':a.id==='priority'&&document.getElementById('preemptive').checked?'Prioridades apropiativo':a.name;const slots=sim.timeline.map((name,i)=>{const p=sim.procs.find(x=>x.name===name);const bg=p?p.color:'var(--idle)';return `<div class="slot ${name==='IDLE'?'idle':''} ${i===currentTime-1?'activeStep':''}" style="background:${bg}" title="t=${i}: ${name}">${name==='IDLE'?'—':name}</div>`}).join('');const ticks=sim.timeline.map((_,i)=>`<div class="tick">${i}</div>`).join('')+(sim.timeline.length?`<div class="tick">${sim.timeline.length}</div>`:'');const queue=sim.ready?.map(p=>p.name).join(', ')||'vacía';area.insertAdjacentHTML('beforeend',`<div class="simbar"><div class="barhead"><span class="algoTitle"><span class="algoname">${label}</span><button class="helpBtn" type="button" onclick="openHelp('${a.id}')" aria-label="Ayuda sobre ${a.name}" title="Ayuda sobre ${a.name}">?</button></span><span class="stats">t = ${currentTime} · cola: ${queue}</span></div><div class="timeline">${slots||'<div class="slot idle">Inicio</div>'}</div><div class="timeaxis">${ticks}</div></div>`)});}
+function renderLegend(){const leg=document.getElementById('legend');if(!leg)return;leg.innerHTML=processes.map((p,i)=>`<span class="pill"><span class="swatch" style="background:${colors[i%colors.length]}"></span>${p.name}</span>`).join('')+`<span class="pill"><span class="swatch" style="background:var(--idle)"></span>CPU libre</span>`;}
+function metricsFor(sim){return sim.procs.map(p=>({name:p.name, wait:(p.finish-p.arrival-p.burst), turnaround:p.finish-p.arrival, response:p.start-p.arrival, finish:p.finish}));}
+function avg(arr,k){return (arr.reduce((s,x)=>s+x[k],0)/arr.length).toFixed(2)}
+function renderMetrics(done){const m=document.getElementById('metrics');if(!done){m.innerHTML='<p class="small">Ejecuta la simulación para ver tiempos de espera, retorno y respuesta.</p>';return}let html='<table><thead><tr><th>Algoritmo</th><th>Espera media</th><th>Retorno medio</th><th>Respuesta media</th><th>Fin total</th></tr></thead><tbody>';algorithms.forEach(a=>{const data=metricsFor(sims[a.id]);const name=a.id==='sjf'&&document.getElementById('preemptive').checked?'SJF / SRTF':a.id==='priority'&&document.getElementById('preemptive').checked?'Prioridades apropiativo':a.name;html+=`<tr><td><strong>${name}</strong></td><td>${avg(data,'wait')}</td><td>${avg(data,'turnaround')}</td><td>${avg(data,'response')}</td><td>${Math.max(...data.map(x=>x.finish))}</td></tr>`});html+='</tbody></table>';m.innerHTML=html;}
+window.openHelp=id=>{const help=helpTexts[id];if(!help)return;document.getElementById('helpTitle').textContent=help.title;document.getElementById('helpBody').innerHTML=help.body;document.getElementById('helpModal').classList.add('open');document.getElementById('closeHelpBtn').focus();}
+function closeHelp(){document.getElementById('helpModal').classList.remove('open');}
+document.getElementById('closeHelpBtn').onclick=closeHelp;
+document.getElementById('helpModal').onclick=e=>{if(e.target.id==='helpModal')closeHelp();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp();});
+document.getElementById('addBtn').onclick=addProcess;document.getElementById('sampleBtn').onclick=loadSample;document.getElementById('clearBtn').onclick=()=>{processes=[];renderTable();prepare();};document.getElementById('resetBtn').onclick=prepare;document.getElementById('stepBtn').onclick=stepAll;document.getElementById('runBtn').onclick=runAll;document.getElementById('autoBtn').onclick=toggleAuto;document.getElementById('preemptive').onchange=prepare;document.getElementById('quantum').onchange=prepare;loadSample();
+</script>
+</body>
+</html>

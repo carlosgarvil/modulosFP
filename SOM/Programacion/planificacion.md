@@ -2,12 +2,12 @@
 
 | UT | Bloque | Horas aprox. |
 |---:|---|---:|
-| 1 | Fundamentos de los sistemas operativos | 15 |
+| 1 | Fundamentos de los sistemas operativos | 25 |
 | 2 | Virtualización y laboratorio | 15 |
-| 3 | Instalación de sistemas operativos | 18 |
-| 4 | Windows: administración y configuración | 28 |
+| 3 | Instalación de sistemas operativos | 15 |
+| 4 | Windows: administración y configuración | 25 |
 | 5 | Windows: mantenimiento, seguridad y recuperación | 20 |
-| 6 | Linux: administración y terminal | 24 |
+| 6 | Linux: administración y terminal | 20 |
 | 7 | Linux: mantenimiento, automatización y seguridad | 20 |
 | 8 | Despliegue e implantación de sistemas operativos (Periodo Dual) | |
 |  | **Total** | **140 h** |
@@ -18,10 +18,9 @@
 
 ### Contenidos
 
+- Sistemas de representación.
 - Evolución de los sistemas operativos.
 - Hardware, firmware y software.
-- Sistemas de codificación y representación de la información.
-- Conversión entre binario, decimal y hexadecimal.
 - Arquitectura de un sistema operativo.
 - Kernel y espacio de usuario.
 - Tipos de sistemas operativos.
@@ -34,8 +33,8 @@
 
 ### Prácticas
 
+- Codificación y conversión entre sistemas de representación.
 - Simulador HTML de procesos.
-- Ejercicios de conversión entre binario, decimal y hexadecimal.
 - Observación de procesos reales.
 - Exploración de un sistema de archivos.
 - Comparativa Windows/Linux.
@@ -240,7 +239,6 @@
 
 ### Prácticas
 
-- Caso práctico integrador: plan de instalación, configuración inicial, incidencias y licencias.
 - Instalación semiautomática con Rufus: el alumnado la realiza.
 - Instalación automática con `autounattend.xml`: el alumnado la observa y modifica un par de campos.
 - Autoinstall de Ubuntu: el alumnado lee el YAML y ve una demostración.

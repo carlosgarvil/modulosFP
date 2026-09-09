@@ -20,6 +20,8 @@
 
 - Evolución de los sistemas operativos.
 - Hardware, firmware y software.
+- Sistemas de codificación y representación de la información.
+- Conversión entre binario, decimal y hexadecimal.
 - Arquitectura de un sistema operativo.
 - Kernel y espacio de usuario.
 - Tipos de sistemas operativos.
@@ -33,6 +35,7 @@
 ### Prácticas
 
 - Simulador HTML de procesos.
+- Ejercicios de conversión entre binario, decimal y hexadecimal.
 - Observación de procesos reales.
 - Exploración de un sistema de archivos.
 - Comparativa Windows/Linux.
@@ -237,6 +240,7 @@
 
 ### Prácticas
 
+- Caso práctico integrador: plan de instalación, configuración inicial, incidencias y licencias.
 - Instalación semiautomática con Rufus: el alumnado la realiza.
 - Instalación automática con `autounattend.xml`: el alumnado la observa y modifica un par de campos.
 - Autoinstall de Ubuntu: el alumnado lee el YAML y ve una demostración.

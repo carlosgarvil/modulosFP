@@ -9,12 +9,12 @@
 | 5 | Windows: mantenimiento, seguridad y recuperación | 20 |
 | 6 | Linux: administración y terminal | 20 |
 | 7 | Linux: mantenimiento, automatización y seguridad | 20 |
-| 8 | Despliegue e implantación de sistemas operativos (Periodo Dual) | |
+| 8 | Despliegue e implantación de sistemas operativos (Periodo Dual) | 10 |
 |  | **Total** | **140 h** |
 
-## UT1. Fundamentos de los sistemas operativos (15 h)
+## UT1. Fundamentos de los sistemas operativos (25 h)
 
-**Pregunta guía:** ¿Qué hace realmente un sistema operativo?
+**Pregunta guía:** ¿Qué es y para qué sirve realmente un sistema operativo?
 
 ### Contenidos
 
@@ -62,7 +62,7 @@
 - Clonar una máquina.
 - Compartir una VM con un compañero.
 
-## UT3. Instalación de sistemas operativos (18 h)
+## UT3. Instalación de sistemas operativos (15 h)
 
 **Pregunta guía:** ¿Qué ocurre desde que pulsamos el botón de encendido hasta que aparece el escritorio?
 
@@ -87,7 +87,7 @@
 - Configurar VirtualBox.
 - Instalar Linux.
 
-## UT4. Administración y configuración de Windows (28 h)
+## UT4. Administración y configuración de Windows (25 h)
 
 **Pregunta guía:** ¿Cómo se administra correctamente un equipo Windows?
 
@@ -137,7 +137,7 @@
 - Configurar copias automáticas.
 - Analizar eventos.
 
-## UT6. Administración de Linux (24 h)
+## UT6. Administración de Linux (20 h)
 
 **Pregunta guía:** ¿Cómo se administra Linux desde el escritorio y la terminal?
 

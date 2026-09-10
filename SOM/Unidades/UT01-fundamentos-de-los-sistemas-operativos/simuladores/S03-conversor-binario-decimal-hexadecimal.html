@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Simulador interactivo para convertir números entre binario, decimal y hexadecimal.">
+  <title>Conversor binario, decimal y hexadecimal - SOM</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: rgba(13, 27, 46, 0.88);
+      --panel-solid: #0d1b2e;
+      --panel-soft: #122541;
+      --line: #294465;
+      --text: #f3f7fc;
+      --muted: #9db0c8;
+      --cyan: #55d9ff;
+      --cyan-soft: rgba(85, 217, 255, 0.15);
+      --green: #8bea9d;
+      --amber: #ffc857;
+      --red: #ff7b89;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(41, 133, 191, 0.28), transparent 28rem),
+        radial-gradient(circle at 94% 16%, rgba(67, 200, 158, 0.14), transparent 24rem),
+        linear-gradient(145deg, #07111f, #091728 55%, #050c16);
+    }
+
+    button, input { font: inherit; }
+
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app-header {
+      width: min(78rem, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2.4rem 0 1.4rem;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 0.55rem;
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 2rem;
+      height: 2px;
+      background: var(--cyan);
+      content: "";
+    }
+
+    h1 {
+      max-width: 58rem;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4.3rem);
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      max-width: 49rem;
+      margin: 0.9rem 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      line-height: 1.6;
+    }
+
+    main {
+      display: grid;
+      gap: 1rem;
+      width: min(78rem, calc(100% - 2rem));
+      margin: 0 auto;
+      padding-bottom: 2rem;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(155deg, rgba(18, 37, 65, 0.9), var(--panel));
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .control-panel { padding: 1.15rem; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .toolbar-title {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .status-dot {
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px var(--green);
+    }
+
+    .bit-selector {
+      display: inline-flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(3, 12, 23, 0.48);
+    }
+
+    .bit-selector button,
+    .action-button {
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .bit-selector button {
+      padding: 0.45rem 0.7rem;
+      color: var(--muted);
+      background: transparent;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .bit-selector button.active {
+      color: #03131d;
+      background: var(--cyan);
+      box-shadow: 0 0 16px rgba(85, 217, 255, 0.25);
+    }
+
+    .converter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+    }
+
+    .number-field {
+      position: relative;
+      padding: 0.9rem 1rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(5, 15, 27, 0.58);
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    .number-field:focus-within {
+      border-color: var(--cyan);
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 3px var(--cyan-soft);
+    }
+
+    .number-field.invalid {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(255, 123, 137, 0.12);
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .base-badge {
+      color: var(--cyan);
+      font-family: var(--mono);
+      letter-spacing: 0;
+    }
+
+    .input-row { display: flex; align-items: center; }
+
+    .prefix {
+      color: #607a99;
+      font-family: var(--mono);
+      font-size: 1.15rem;
+    }
+
+    .number-field input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      background: transparent;
+      font-family: var(--mono);
+      font-size: clamp(1.15rem, 2.3vw, 1.55rem);
+      font-weight: 700;
+    }
+
+    .message {
+      min-height: 1.3rem;
+      margin: 0.7rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .message.error { color: var(--red); }
+
+    .switch-panel { padding: 1.2rem; overflow: hidden; }
+
+    .panel-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .panel-heading h2 { margin: 0; font-size: 1.2rem; }
+
+    .panel-heading p {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .total-readout {
+      flex: none;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid rgba(85, 217, 255, 0.32);
+      border-radius: 10px;
+      color: var(--cyan);
+      background: var(--cyan-soft);
+      font-family: var(--mono);
+      font-weight: 700;
+    }
+
+    .bits-scroller {
+      overflow-x: auto;
+      padding: 0.35rem 0 0.7rem;
+      scrollbar-color: var(--line) transparent;
+    }
+
+    .bits-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--bit-count), minmax(2.6rem, 1fr));
+      gap: clamp(0.35rem, 1vw, 0.75rem);
+      min-width: calc(var(--bit-count) * 3.15rem);
+    }
+
+    .bit-control {
+      display: grid;
+      justify-items: center;
+      gap: 0.42rem;
+    }
+
+    .bit-weight {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    .bit-switch {
+      position: relative;
+      width: 100%;
+      height: 4.6rem;
+      padding: 0;
+      border: 1px solid #34516f;
+      border-radius: 12px;
+      color: var(--muted);
+      background: linear-gradient(180deg, #142942, #0a1626);
+      box-shadow: inset 0 1px rgba(255,255,255,.06), 0 7px 14px rgba(0,0,0,.18);
+      cursor: pointer;
+      transition: border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+    }
+
+    .bit-switch:hover { border-color: #5e83a9; }
+    .bit-switch:active { transform: translateY(2px); }
+
+    .bit-switch::before {
+      position: absolute;
+      top: 0.65rem;
+      left: 50%;
+      width: 1.5rem;
+      height: 2.35rem;
+      border-radius: 999px;
+      background: #07111e;
+      box-shadow: inset 0 2px 7px rgba(0,0,0,.75);
+      transform: translateX(-50%);
+      content: "";
+    }
+
+    .bit-switch::after {
+      position: absolute;
+      top: 1.72rem;
+      left: 50%;
+      width: 1.08rem;
+      height: 1.08rem;
+      border-radius: 50%;
+      background: #54708d;
+      box-shadow: 0 2px 5px rgba(0,0,0,.55);
+      transform: translateX(-50%);
+      transition: top 160ms ease, background 160ms ease, box-shadow 160ms ease;
+      content: "";
+    }
+
+    .bit-switch.on {
+      border-color: var(--cyan);
+      background: linear-gradient(180deg, rgba(35, 117, 153, .7), #0b2034);
+      box-shadow: 0 0 18px rgba(85, 217, 255, .17), inset 0 1px rgba(255,255,255,.1);
+    }
+
+    .bit-switch.on::after {
+      top: 0.84rem;
+      background: var(--cyan);
+      box-shadow: 0 0 11px rgba(85,217,255,.9);
+    }
+
+    .bit-value {
+      color: #7890aa;
+      font-family: var(--mono);
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .bit-control.active .bit-value { color: var(--cyan); }
+
+    .place-label {
+      color: #607a99;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.7rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .action-button {
+      padding: 0.65rem 0.9rem;
+      color: var(--text);
+      background: #1b3553;
+    }
+
+    .action-button:hover { background: #264a70; }
+    .action-button.primary { color: #041019; background: var(--cyan); }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 1rem;
+    }
+
+    .explanation-panel, .guide-panel { min-width: 0; padding: 1.2rem; }
+    .explanation-panel h2, .guide-panel h2 { margin: 0 0 0.9rem; font-size: 1.1rem; }
+
+    .equation {
+      min-height: 5.3rem;
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--text);
+      background: rgba(4, 13, 24, 0.48);
+      font-family: var(--mono);
+      font-size: clamp(0.9rem, 2vw, 1.12rem);
+      line-height: 1.7;
+      white-space: nowrap;
+    }
+
+    .equation .term { color: var(--cyan); font-weight: 800; }
+    .equation .equals { margin: 0 0.55rem; color: var(--muted); }
+    .equation .result { color: var(--green); font-weight: 800; }
+
+    .hex-breakdown {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.8rem;
+    }
+
+    .hex-group {
+      display: grid;
+      gap: 0.15rem;
+      min-width: 4.2rem;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      text-align: center;
+      background: rgba(4, 13, 24, 0.35);
+    }
+
+    .hex-group strong { color: var(--amber); font-family: var(--mono); font-size: 1.05rem; }
+    .hex-group span { color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+
+    .guide-list {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .guide-list li {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.65rem;
+      align-items: start;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .step-number {
+      display: grid;
+      width: 2rem;
+      height: 2rem;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--cyan);
+      background: var(--cyan-soft);
+      font-family: var(--mono);
+      font-weight: 800;
+    }
+
+    .guide-list strong { color: var(--text); }
+
+    footer {
+      padding: 0.3rem 1rem 1.8rem;
+      color: #7188a2;
+      text-align: center;
+      font-size: 0.78rem;
+    }
+
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(85, 217, 255, 0.7);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 850px) {
+      .converter-grid, .learning-grid { grid-template-columns: 1fr; }
+      .panel-heading { align-items: flex-start; }
+    }
+
+    @media (max-width: 540px) {
+      .app-header, main { width: min(100% - 1rem, 78rem); }
+      .app-header { padding-top: 1.5rem; }
+      .toolbar, .panel-heading { align-items: stretch; flex-direction: column; }
+      .bit-selector { align-self: flex-start; }
+      .total-readout { align-self: flex-start; }
+      .control-panel, .switch-panel, .explanation-panel, .guide-panel { padding: 0.9rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <p class="eyebrow">Laboratorio de representación de datos</p>
+    <h1>Un número.<br>Tres lenguajes.</h1>
+    <p class="subtitle">Activa los interruptores para construir un número bit a bit o escribe directamente en cualquier base. Todas las representaciones se actualizan al instante.</p>
+  </header>
+
+  <main>
+    <section class="panel control-panel" aria-labelledby="converter-title">
+      <div class="toolbar">
+        <h2 class="toolbar-title" id="converter-title"><span class="status-dot" aria-hidden="true"></span> Conversión sincronizada</h2>
+        <div class="bit-selector" aria-label="Seleccionar cantidad de bits">
+          <button type="button" data-bits="8" class="active" aria-pressed="true">8 bits</button>
+          <button type="button" data-bits="16" aria-pressed="false">16 bits</button>
+          <button type="button" data-bits="32" aria-pressed="false">32 bits</button>
+        </div>
+      </div>
+
+      <div class="converter-grid">
+        <label class="number-field" id="binary-field">
+          <span class="field-label">Binario <span class="base-badge">BASE 2</span></span>
+          <span class="input-row"><span class="prefix">0b&nbsp;</span><input id="binary-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="input-message" value="00101010"></span>
+        </label>
+        <label class="number-field" id="decimal-field">
+          <span class="field-label">Decimal <span class="base-badge">BASE 10</span></span>
+          <span class="input-row"><input id="decimal-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="input-message" value="42"></span>
+        </label>
+        <label class="number-field" id="hex-field">
+          <span class="field-label">Hexadecimal <span class="base-badge">BASE 16</span></span>
+          <span class="input-row"><span class="prefix">0x&nbsp;</span><input id="hex-input" type="text" autocomplete="off" spellcheck="false" aria-describedby="input-message" value="2A"></span>
+        </label>
+      </div>
+      <p class="message" id="input-message" role="status" aria-live="polite">Rango actual: de 0 a 255.</p>
+    </section>
+
+    <section class="panel switch-panel" aria-labelledby="switch-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="switch-title">Banco de interruptores</h2>
+          <p>Cada interruptor activo suma su peso al valor decimal.</p>
+        </div>
+        <output class="total-readout" id="total-readout" aria-live="polite">Total = 42</output>
+      </div>
+
+      <div class="bits-scroller" tabindex="0" aria-label="Interruptores binarios, desplazar horizontalmente si es necesario">
+        <div class="bits-grid" id="bits-grid" style="--bit-count: 8"></div>
+      </div>
+
+      <div class="action-row">
+        <button class="action-button primary" id="random-button" type="button">Número aleatorio</button>
+        <button class="action-button" id="all-on-button" type="button">Todos a 1</button>
+        <button class="action-button" id="clear-button" type="button">Poner a cero</button>
+        <button class="action-button" id="invert-button" type="button">Invertir bits</button>
+      </div>
+    </section>
+
+    <div class="learning-grid">
+      <section class="panel explanation-panel" aria-labelledby="explanation-title">
+        <h2 id="explanation-title">¿Cómo se forma el número?</h2>
+        <div class="equation" id="equation"></div>
+        <div class="hex-breakdown" id="hex-breakdown" aria-label="Agrupación de bits en dígitos hexadecimales"></div>
+      </section>
+
+      <aside class="panel guide-panel" aria-labelledby="guide-title">
+        <h2 id="guide-title">Claves para entenderlo</h2>
+        <ol class="guide-list">
+          <li><span class="step-number">1</span><span><strong>Binario:</strong> cada posición vale una potencia de 2.</span></li>
+          <li><span class="step-number">2</span><span><strong>Decimal:</strong> suma únicamente los pesos con bit 1.</span></li>
+          <li><span class="step-number">3</span><span><strong>Hexadecimal:</strong> agrupa el binario de cuatro en cuatro bits.</span></li>
+        </ol>
+      </aside>
+    </div>
+  </main>
+
+  <footer>SOM · Fundamentos de los sistemas operativos · Representación de la información</footer>
+
+  <script>
+    const state = { bitCount: 8, value: 42n };
+    const binaryInput = document.getElementById('binary-input');
+    const decimalInput = document.getElementById('decimal-input');
+    const hexInput = document.getElementById('hex-input');
+    const bitsGrid = document.getElementById('bits-grid');
+    const message = document.getElementById('input-message');
+    const totalReadout = document.getElementById('total-readout');
+    const equation = document.getElementById('equation');
+    const hexBreakdown = document.getElementById('hex-breakdown');
+    const numberFields = document.querySelectorAll('.number-field');
+
+    function maxValue() {
+      return (1n << BigInt(state.bitCount)) - 1n;
+    }
+
+    function paddedBinary() {
+      return state.value.toString(2).padStart(state.bitCount, '0');
+    }
+
+    function paddedHex() {
+      return state.value.toString(16).toUpperCase().padStart(state.bitCount / 4, '0');
+    }
+
+    function formatDecimal(value) {
+      return new Intl.NumberFormat('es-ES').format(value);
+    }
+
+    function clearValidation() {
+      numberFields.forEach(field => field.classList.remove('invalid'));
+      message.classList.remove('error');
+      message.textContent = `Rango actual: de 0 a ${formatDecimal(maxValue())}.`;
+    }
+
+    function showError(fieldId, text) {
+      numberFields.forEach(field => field.classList.toggle('invalid', field.id === fieldId));
+      message.classList.add('error');
+      message.textContent = text;
+    }
+
+    function parseValue(rawValue, base) {
+      const cleanValue = rawValue.trim().replaceAll('_', '').replaceAll(' ', '');
+      if (!cleanValue) return null;
+      const patterns = {
+        2: /^(?:0b)?[01]+$/i,
+        10: /^\d+$/,
+        16: /^(?:0x)?[\da-f]+$/i
+      };
+      if (!patterns[base].test(cleanValue)) return undefined;
+      const withoutPrefix = cleanValue.replace(/^0[bBxX]/, '');
+      return BigInt(base === 10 ? withoutPrefix : `${base === 2 ? '0b' : '0x'}${withoutPrefix}`);
+    }
+
+    function setValue(nextValue) {
+      state.value = nextValue;
+      render();
+    }
+
+    function updateFromInput(input, base, fieldId, baseName) {
+      const parsed = parseValue(input.value, base);
+      if (parsed === null) {
+        showError(fieldId, 'Escribe un valor para realizar la conversión.');
+        return;
+      }
+      if (parsed === undefined) {
+        showError(fieldId, `El valor no es válido en ${baseName}.`);
+        return;
+      }
+      if (parsed > maxValue()) {
+        showError(fieldId, `El valor supera el máximo de ${formatDecimal(maxValue())} para ${state.bitCount} bits.`);
+        return;
+      }
+      state.value = parsed;
+      render(input.id);
+    }
+
+    function toggleBit(position) {
+      state.value ^= 1n << BigInt(position);
+      render();
+    }
+
+    function renderBits(binary) {
+      bitsGrid.style.setProperty('--bit-count', state.bitCount);
+      bitsGrid.innerHTML = '';
+      for (let index = 0; index < state.bitCount; index++) {
+        const position = state.bitCount - 1 - index;
+        const active = binary[index] === '1';
+        const control = document.createElement('div');
+        control.className = `bit-control${active ? ' active' : ''}`;
+        control.innerHTML = `
+          <span class="bit-weight">${formatDecimal(1n << BigInt(position))}</span>
+          <button class="bit-switch${active ? ' on' : ''}" type="button" data-position="${position}" aria-label="Bit ${position}, valor ${active ? 1 : 0}, peso ${1n << BigInt(position)}" aria-pressed="${active}"></button>
+          <span class="bit-value">${active ? 1 : 0}</span>
+          <span class="place-label">2<sup>${position}</sup></span>`;
+        bitsGrid.appendChild(control);
+      }
+    }
+
+    function renderEquation(binary) {
+      const activeTerms = [];
+      const activeValues = [];
+      for (let index = 0; index < state.bitCount; index++) {
+        if (binary[index] === '1') {
+          const position = state.bitCount - 1 - index;
+          activeTerms.push(`<span class="term">2<sup>${position}</sup></span>`);
+          activeValues.push(`<span class="term">${formatDecimal(1n << BigInt(position))}</span>`);
+        }
+      }
+      equation.innerHTML = activeTerms.length
+        ? `${activeTerms.join('<span class="equals"> + </span>')}<span class="equals"> = </span>${activeValues.join('<span class="equals"> + </span>')}<span class="equals"> = </span><span class="result">${formatDecimal(state.value)}</span>`
+        : '<span class="term">0</span><span class="equals"> = </span><span class="result">0</span>';
+    }
+
+    function renderHexBreakdown(binary, hexadecimal) {
+      const groups = binary.match(/.{4}/g) || [];
+      hexBreakdown.innerHTML = groups.map((group, index) => `
+        <div class="hex-group">
+          <strong>${hexadecimal[index]}</strong>
+          <span>${group}</span>
+        </div>`).join('');
+    }
+
+    function render(sourceInputId = '') {
+      const binary = paddedBinary();
+      const hexadecimal = paddedHex();
+      if (sourceInputId !== binaryInput.id) binaryInput.value = binary;
+      if (sourceInputId !== decimalInput.id) decimalInput.value = state.value.toString(10);
+      if (sourceInputId !== hexInput.id) hexInput.value = hexadecimal;
+      totalReadout.textContent = `Total = ${formatDecimal(state.value)}`;
+      renderBits(binary);
+      renderEquation(binary);
+      renderHexBreakdown(binary, hexadecimal);
+      clearValidation();
+    }
+
+    binaryInput.addEventListener('input', () => updateFromInput(binaryInput, 2, 'binary-field', 'binario'));
+    decimalInput.addEventListener('input', () => updateFromInput(decimalInput, 10, 'decimal-field', 'decimal'));
+    hexInput.addEventListener('input', () => updateFromInput(hexInput, 16, 'hex-field', 'hexadecimal'));
+    [binaryInput, decimalInput, hexInput].forEach(input => input.addEventListener('blur', () => render()));
+
+    bitsGrid.addEventListener('click', event => {
+      const button = event.target.closest('.bit-switch');
+      if (button) toggleBit(Number(button.dataset.position));
+    });
+
+    document.querySelector('.bit-selector').addEventListener('click', event => {
+      const button = event.target.closest('[data-bits]');
+      if (!button) return;
+      state.bitCount = Number(button.dataset.bits);
+      if (state.value > maxValue()) state.value = maxValue();
+      document.querySelectorAll('.bit-selector button').forEach(option => {
+        const active = option === button;
+        option.classList.toggle('active', active);
+        option.setAttribute('aria-pressed', String(active));
+      });
+      render();
+    });
+
+    document.getElementById('clear-button').addEventListener('click', () => setValue(0n));
+    document.getElementById('all-on-button').addEventListener('click', () => setValue(maxValue()));
+    document.getElementById('invert-button').addEventListener('click', () => setValue(maxValue() ^ state.value));
+    document.getElementById('random-button').addEventListener('click', () => {
+      const randomArray = new Uint32Array(1);
+      crypto.getRandomValues(randomArray);
+      setValue(BigInt(randomArray[0]) & maxValue());
+    });
+
+    render();
+  </script>
+</body>
+</html>

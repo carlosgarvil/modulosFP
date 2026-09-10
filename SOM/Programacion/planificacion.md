@@ -27,8 +27,6 @@
 - Procesos e hilos.
 - Planificación de CPU.
 - Gestión de memoria.
-- Sistemas de archivos.
-- Archivos, directorios y permisos.
 - Licencias de software.
 
 ### Prácticas
@@ -74,6 +72,7 @@
 - Arranque del sistema.
 - Particionado.
 - Sistemas de archivos.
+- Archivos, directorios y permisos.
 - Planificación de instalaciones.
 - Instalación de Windows 10.
 - Instalación de Ubuntu.
@@ -94,6 +93,7 @@
 ### Contenidos
 
 - Usuarios y grupos.
+- Sistema de permisos.
 - Configuración regional.
 - Dispositivos.
 - Impresoras.

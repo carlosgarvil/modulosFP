@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Visor de texto hexadecimal · UTF-8</title>
+  <style>
+    :root{--ink:#172238;--muted:#61708a;--line:#dce5f1;--blue:#3569d4;--yellow:#ffd36c;--dark:#111d32}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,#edf4ff,#f8f5ff 55%,#edfbf7);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+    .wrap{width:min(1050px,calc(100% - 2rem));margin:auto}
+    header{text-align:center;padding:2rem 0 1rem}.eyebrow{color:var(--blue);font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    h1{font-size:clamp(1.8rem,4vw,3rem);margin:.3rem 0}h2{font-size:1.2rem;margin:0 0 .35rem}p{margin:.5rem 0}.muted{color:var(--muted)}
+    .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:1.2rem;box-shadow:0 12px 30px #22365c12;margin-bottom:1rem}
+    label{display:block;font-weight:750;margin-bottom:.4rem}button,input{font:inherit}
+    #textInput{width:100%;border:1px solid #aebdd2;border-radius:9px;padding:.7rem .85rem;color:var(--ink);background:#fff}
+    button{border:1px solid #bdcadc;border-radius:8px;padding:.45rem .7rem;background:#fff;color:var(--ink);cursor:pointer}button:hover{background:#e8efff}
+    :focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+    .character-map{display:flex;flex-wrap:wrap;gap:.3rem;min-height:3rem;margin-top:.8rem;padding:.65rem;background:#f4f7fc;border-radius:10px}
+    .character{min-width:2.15rem;height:2.15rem;display:grid;place-items:center;border:1px solid transparent;border-radius:6px;background:#fff;font:1rem ui-monospace,Consolas,monospace;cursor:pointer;white-space:pre}
+    .character:hover,.character.active{background:var(--yellow);border-color:#d19d22;color:var(--ink);font-weight:800}.character.space{color:#718099}.character.space::after{content:'·'}
+    .hex-box{overflow:auto;background:var(--dark);border-radius:10px;padding:.8rem;color:#d5e8ff}
+    .hex-head,.hex-row{display:grid;grid-template-columns:5.8rem repeat(16,2.45rem);gap:4px;font:13px/1.7 ui-monospace,Consolas,monospace;min-width:max-content}
+    .hex-head{color:#8298bb;margin-bottom:.35rem;text-align:center}.hex-head span:first-child{text-align:left}.offset{color:#8298bb;padding-top:.14rem}
+    .byte{width:2.35rem;border:1px solid #40516d;border-radius:4px;padding:.12rem;text-align:center;text-transform:uppercase;background:#182944;color:#d5e8ff;font:inherit}
+    .byte:hover,.byte.active{background:var(--yellow);border-color:#fff;color:var(--ink);font-weight:bold}
+    .byte.invalid{border-color:#ff7181;background:#4d2330}.byte.invalid.active{background:var(--yellow)}
+    .status{min-height:1.55rem;margin-top:.75rem;font-size:.9rem}.error{color:#b32638}.toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.7rem}
+    .notes{margin-bottom:2rem}.notes p{color:var(--muted)}code{font-family:ui-monospace,Consolas,monospace}
+    .ascii-scroll{overflow:auto;margin-top:.8rem;border:1px solid var(--line);border-radius:10px}
+    .ascii-table{width:100%;min-width:760px;border-collapse:collapse;font:14px ui-monospace,Consolas,monospace}
+    .ascii-table th,.ascii-table td{padding:.42rem .55rem;border-bottom:1px solid var(--line);text-align:center}
+    .ascii-table th{position:sticky;top:0;background:#edf3ff;color:var(--ink);font-family:system-ui,sans-serif;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+    .ascii-table tr:last-child td{border-bottom:0}.ascii-table tbody tr:hover{background:#fff4d4}
+    .ascii-char{font-weight:800;color:var(--blue)}.ascii-control{color:var(--muted);font-size:.8rem}.ascii-separator{border-left:2px solid #bdcadc!important}
+    @media(max-width:600px){header{padding-top:1.2rem}.card{padding:.9rem}}
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="eyebrow">Sistemas Operativos Monopuesto · 1.º SMR</div>
+    <h1>Del texto al hexadecimal</h1>
+    <p class="muted">Descubre cómo se representa un texto byte a byte mediante UTF-8.</p>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <h2>Texto</h2>
+      <label for="textInput">Escribe una línea</label>
+      <input id="textInput" type="text" value="¡Hola, mundo! 👋" autocomplete="off" spellcheck="false">
+      <div class="toolbar"><button id="example" type="button">Cargar ejemplo</button><button id="clear" type="button">Borrar</button><span id="counter" class="muted"></span></div>
+      <p class="muted">Pasa el ratón por un carácter o haz clic para fijarlo. También puedes usar el cursor del campo de texto.</p>
+      <div id="characters" class="character-map" aria-label="Caracteres del texto"></div>
+    </section>
+
+    <section class="card">
+      <h2>Contenido HEX (UTF-8)</h2>
+      <p class="muted">Cada casilla es un byte. Escribe dos dígitos hexadecimales (00–FF) para modificar el texto.</p>
+      <div class="hex-box"><div id="hexHead" class="hex-head"></div><div id="hex"></div></div>
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card notes">
+      <h2>Qué estás viendo</h2>
+      <p>UTF-8 usa un byte para los caracteres ASCII y varios para muchos otros símbolos. Por ejemplo, una letra común suele ocupar <code>1 byte</code>, <code>ñ</code> ocupa <code>2 bytes</code>, <code>€</code> ocupa <code>3</code> y muchos emoji ocupan <code>4</code>.</p>
+      <p>Si introduces una secuencia que no es UTF-8 válida, el navegador muestra el carácter de sustitución <code>�</code>. Los bytes incorrectos se conservan para que puedas corregirlos y aparecen marcados en rojo.</p>
+    </section>
+
+    <section class="card notes">
+      <h2>Tabla ASCII</h2>
+      <p>ASCII contiene 128 códigos, del 0 al 127. Los códigos del 0 al 31 y el 127 son caracteres de control; los demás son imprimibles. En UTF-8, todos ellos conservan exactamente el mismo valor y ocupan un byte.</p>
+      <div class="ascii-scroll">
+        <table class="ascii-table">
+          <thead id="asciiHead"></thead>
+          <tbody id="asciiBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    'use strict';
+    const $=id=>document.getElementById(id);
+    const encoder=new TextEncoder(), decoder=new TextDecoder('utf-8'), strictDecoder=new TextDecoder('utf-8',{fatal:true});
+    const hex=n=>n.toString(16).toUpperCase().padStart(2,'0');
+    let bytes=new Uint8Array(), units=[], active=-1, pinned=false, editingHex=false;
+
+    function analyse(text){
+      let offset=0;
+      return Array.from(text).map((char,index)=>{const length=encoder.encode(char).length;const unit={char,index,start:offset,end:offset+length};offset+=length;return unit});
+    }
+    function validUtf8(){try{strictDecoder.decode(bytes);return true}catch{return false}}
+    function renderCharacters(text){
+      units=analyse(text);
+      $('characters').innerHTML='';
+      units.forEach((unit,i)=>{const el=document.createElement('button');el.type='button';el.className='character'+(unit.char===' '?' space':'');el.dataset.index=i;el.title=`Carácter ${i+1} · bytes ${unit.start}${unit.end-unit.start>1?'–'+(unit.end-1):''}`;el.setAttribute('aria-label',unit.char===' '?`Espacio, carácter ${i+1}`:`${unit.char}, carácter ${i+1}`);if(unit.char!==' ')el.textContent=unit.char;$('characters').append(el)});
+    }
+    function renderHex(){
+      let html='';
+      for(let row=0;row<bytes.length;row+=16){html+=`<div class="hex-row"><span class="offset">${row.toString(16).toUpperCase().padStart(8,'0')}</span>`;
+        for(let i=row;i<Math.min(row+16,bytes.length);i++)html+=`<input class="byte" data-byte="${i}" value="${hex(bytes[i])}" maxlength="2" inputmode="text" aria-label="Byte ${i}, valor ${hex(bytes[i])}">`;
+        html+='</div>';
+      }
+      $('hex').innerHTML=html||'<span class="muted">No hay bytes que mostrar.</span>';highlight();
+    }
+    function highlight(index=active){
+      document.querySelectorAll('.character').forEach(el=>el.classList.toggle('active',Number(el.dataset.index)===index));
+      document.querySelectorAll('.byte').forEach(el=>{const unit=units[index],n=Number(el.dataset.byte);el.classList.toggle('active',!!unit&&n>=unit.start&&n<unit.end)});
+    }
+    function setStatus(){
+      const valid=validUtf8();$('status').className='status'+(valid?'':' error');
+      $('status').textContent=valid?`${bytes.length} byte${bytes.length===1?'':'s'} · Codificación UTF-8 válida.`:`${bytes.length} bytes · La secuencia no es UTF-8 válida; corrige los bytes marcados.`;
+      document.querySelectorAll('.byte').forEach(el=>el.classList.toggle('invalid',!valid));
+    }
+    function fromText(){
+      editingHex=false;bytes=encoder.encode($('textInput').value);active=-1;pinned=false;renderCharacters($('textInput').value);renderHex();setStatus();
+      $('counter').textContent=`${units.length} carácter${units.length===1?'':'es'} · ${bytes.length} byte${bytes.length===1?'':'s'}`;
+    }
+    function fromHex(changed){
+      const fields=[...document.querySelectorAll('.byte')];
+      if(!fields.every(el=>/^[0-9a-fA-F]{2}$/.test(el.value))){changed.classList.add('invalid');$('status').className='status error';$('status').textContent='Cada byte debe contener exactamente dos dígitos hexadecimales (00–FF).';return}
+      bytes=Uint8Array.from(fields,el=>parseInt(el.value,16));
+      const text=decoder.decode(bytes);editingHex=true;$('textInput').value=text;active=-1;pinned=false;renderCharacters(text);setStatus();
+      $('counter').textContent=`${units.length} carácter${units.length===1?'':'es'} · ${bytes.length} byte${bytes.length===1?'':'s'}`;highlight();
+    }
+    function characterAtCursor(){
+      const pos=$('textInput').selectionStart, prefix=$('textInput').value.slice(0,pos);active=Math.max(0,Array.from(prefix).length-(pos>0?1:0));if(!units.length)active=-1;highlight();
+    }
+    function renderAscii(){
+      const controls=['NUL','SOH','STX','ETX','EOT','ENQ','ACK','BEL','BS','HT','LF','VT','FF','CR','SO','SI','DLE','DC1','DC2','DC3','DC4','NAK','SYN','ETB','CAN','EM','SUB','ESC','FS','GS','RS','US'];
+      const label=n=>n<32?controls[n]:n===32?'ESPACIO':n===127?'DEL':String.fromCharCode(n);
+      $('asciiHead').innerHTML='<tr>'+Array.from({length:4},(_,i)=>`<th${i?' class="ascii-separator"':''}>Decimal</th><th>HEX</th><th>Carácter</th>`).join('')+'</tr>';
+      let html='';
+      for(let row=0;row<32;row++){
+        html+='<tr>';
+        for(let group=0;group<4;group++){
+          const n=row+group*32, control=n<32||n===127;
+          html+=`<td${group?' class="ascii-separator"':''}>${n}</td><td>${hex(n)}</td><td class="${control?'ascii-control':'ascii-char'}" title="ASCII ${n}, hexadecimal ${hex(n)}">${label(n)}</td>`;
+        }
+        html+='</tr>';
+      }
+      $('asciiBody').innerHTML=html;
+    }
+    $('textInput').addEventListener('input',fromText);$('textInput').addEventListener('click',characterAtCursor);$('textInput').addEventListener('keyup',characterAtCursor);
+    $('characters').addEventListener('pointerover',e=>{const el=e.target.closest('.character');if(el&&!pinned)highlight(Number(el.dataset.index))});
+    $('characters').addEventListener('pointerleave',()=>{if(!pinned)highlight(active)});
+    $('characters').addEventListener('click',e=>{const el=e.target.closest('.character');if(!el)return;active=Number(el.dataset.index);pinned=true;highlight()});
+    $('hex').addEventListener('input',e=>{if(e.target.matches('.byte'))fromHex(e.target)});
+    $('hex').addEventListener('pointerover',e=>{const el=e.target.closest('.byte');if(!el||pinned)return;const n=Number(el.dataset.byte),i=units.findIndex(u=>n>=u.start&&n<u.end);highlight(i)});
+    $('hex').addEventListener('pointerleave',()=>{if(!pinned)highlight(active)});
+    $('hex').addEventListener('click',e=>{const el=e.target.closest('.byte');if(!el)return;const n=Number(el.dataset.byte);active=units.findIndex(u=>n>=u.start&&n<u.end);pinned=true;highlight()});
+    $('example').onclick=()=>{$('textInput').value='ASCII, España, 10 €, café ☕';fromText()};
+    $('clear').onclick=()=>{$('textInput').value='';fromText();$('textInput').focus()};
+    $('hexHead').innerHTML='<span>OFFSET</span>'+Array.from({length:16},(_,i)=>`<span>${hex(i)}</span>`).join('');
+    renderAscii();
+    fromText();
+  </script>
+</body>
+</html>

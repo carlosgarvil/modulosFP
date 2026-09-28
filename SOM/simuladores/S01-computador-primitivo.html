@@ -881,6 +881,10 @@ function bitsToValue(bits) {
   return bits.reduce((sum, bit, index) => sum + bit * BIT_WEIGHTS[index], 0);
 }
 
+function setBitsFromValue(bits, value) {
+  bits.splice(0, bits.length, ...toBinary(value).split("").map(Number));
+}
+
 function printableAscii(value) {
   return value >= 32 && value <= 126 ? String.fromCharCode(value) : ".";
 }
@@ -961,7 +965,8 @@ function createMemoryTable() {
     const row = document.createElement("tr");
     row.dataset.address = String(address);
     row.addEventListener("click", () => {
-      addressBits = toBinary(address).split("").map(Number);
+      setBitsFromValue(addressBits, address);
+      setBitsFromValue(dataBits, memory[address]);
       updateInterface();
     });
 
@@ -1190,7 +1195,12 @@ function bindControls() {
   els.clearButton.addEventListener("click", clearMemory);
   els.demoButton.addEventListener("click", loadDemo);
   document.querySelectorAll(".instruction-card").forEach((button) => {
-    button.addEventListener("click", () => openInstructionModal(button.dataset.instruction));
+    button.addEventListener("click", () => {
+      const code = button.dataset.instruction;
+      setBitsFromValue(dataBits, Number.parseInt(code, 16));
+      updateInterface();
+      openInstructionModal(code);
+    });
   });
   els.modalCloseButton.addEventListener("click", closeInstructionModal);
   els.instructionModal.addEventListener("click", (event) => {

@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="description"
+    content="Test de autoevaluación de inglés para obtener una estimación del nivel entre A1 y C1."
+  >
+  <title>Test de nivel de inglés | A1–C1</title>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f3f7fb;
+      --surface: #ffffff;
+      --primary: #2457c5;
+      --primary-dark: #193f95;
+      --text: #172238;
+      --muted: #667085;
+      --border: #dce4ef;
+      --focus: #f4b942;
+      --radius: 1rem;
+      --shadow: 0 1rem 2.5rem rgb(23 34 56 / 10%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #eaf2ff 0%, var(--background) 48%, #edf9f5 100%);
+      color: var(--text);
+      font: 1rem/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .page-shell {
+      width: min(48rem, calc(100% - 2rem));
+      margin-inline: auto;
+      padding: 3rem 0;
+    }
+
+    .test-header {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--primary);
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2 {
+      line-height: 1.2;
+    }
+
+    h1 {
+      margin: .35rem 0 .75rem;
+      font-size: clamp(2rem, 7vw, 3.4rem);
+    }
+
+    .lead {
+      max-width: 38rem;
+      margin: 0 auto;
+      color: var(--muted);
+    }
+
+    .card {
+      padding: clamp(1.25rem, 4vw, 2rem);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .instructions h2,
+    .result h2 {
+      margin-top: 0;
+    }
+
+    .instructions ul {
+      margin-bottom: 0;
+      padding-left: 1.25rem;
+    }
+
+    .test-panel {
+      margin-top: 1.25rem;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    progress {
+      width: 100%;
+      height: .75rem;
+      margin-top: .5rem;
+      accent-color: var(--primary);
+    }
+
+    .question-area {
+      min-height: 12rem;
+      margin: 1.5rem 0;
+    }
+
+    .question-meta {
+      margin: 0 0 .4rem;
+      color: var(--primary);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    legend {
+      width: 100%;
+      margin-bottom: 1.1rem;
+      font-size: clamp(1.1rem, 3vw, 1.3rem);
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .options {
+      display: grid;
+      gap: .65rem;
+    }
+
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      padding: .8rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: .7rem;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .option:hover {
+      border-color: #9db6e8;
+      background: #f7faff;
+    }
+
+    .option:has(input:checked) {
+      border-color: var(--primary);
+      background: #edf3ff;
+    }
+
+    .option input {
+      flex: 0 0 auto;
+      margin-top: .35rem;
+      accent-color: var(--primary);
+    }
+
+    .test-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+
+    .button {
+      min-height: 2.75rem;
+      padding: .65rem 1.15rem;
+      border: 1px solid transparent;
+      border-radius: .65rem;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .button-secondary {
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: .5;
+    }
+
+    .result {
+      margin-top: 1.25rem;
+      text-align: center;
+    }
+
+    .level-badge {
+      display: inline-grid;
+      width: 6rem;
+      height: 6rem;
+      margin: .5rem 0 1rem;
+      place-items: center;
+      border-radius: 50%;
+      background: #e7efff;
+      color: var(--primary);
+      font-size: 2rem;
+      font-weight: 800;
+    }
+
+    .score-summary {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .breakdown {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: .5rem;
+      margin: 1.25rem 0;
+    }
+
+    .breakdown-item {
+      padding: .65rem .25rem;
+      border-radius: .6rem;
+      background: var(--background);
+    }
+
+    .breakdown-item strong,
+    .breakdown-item span {
+      display: block;
+    }
+
+    .breakdown-item span {
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .page-footer {
+      margin-top: 1.5rem;
+      color: var(--muted);
+      font-size: .85rem;
+      text-align: center;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 32rem) {
+      .page-shell {
+        padding: 1.5rem 0;
+      }
+
+      .test-controls {
+        flex-direction: column-reverse;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .breakdown {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page-shell">
+    <header class="test-header">
+      <p class="eyebrow">English placement test</p>
+      <h1>Descubre tu nivel de inglés</h1>
+      <p class="lead">
+        Completa el test para obtener una estimación de tu nivel según el Marco Común Europeo,
+        desde A1 hasta C1.
+      </p>
+    </header>
+
+    <section class="card instructions" aria-labelledby="instructions-title">
+      <h2 id="instructions-title">Antes de empezar</h2>
+      <ul>
+        <li>Lee cada enunciado con atención.</li>
+        <li>Selecciona una sola respuesta por pregunta.</li>
+        <li>Responde sin utilizar traductores ni diccionarios.</li>
+      </ul>
+    </section>
+
+    <section class="card test-panel" id="test-panel" aria-labelledby="test-title">
+      <h2 id="test-title">Test de autoevaluación</h2>
+
+      <div class="progress-header">
+        <span id="progress-label">Preparado para comenzar</span>
+        <span id="progress-count" aria-hidden="true">0 / 0</span>
+      </div>
+      <progress id="test-progress" value="0" max="1" aria-labelledby="progress-label"></progress>
+
+      <form id="level-test" novalidate>
+        <!-- Las preguntas se insertarán dinámicamente dentro de este contenedor. -->
+        <div class="question-area" id="question-area" aria-live="polite" tabindex="-1"></div>
+
+        <nav class="test-controls" aria-label="Navegación del test">
+          <button class="button button-secondary" id="previous-button" type="button" disabled>
+            Anterior
+          </button>
+          <button class="button" id="next-button" type="button" disabled>
+            Siguiente
+          </button>
+          <button class="button" id="finish-button" type="submit" hidden>
+            Ver mi nivel
+          </button>
+        </nav>
+      </form>
+    </section>
+
+    <section class="card result" id="result-panel" aria-labelledby="result-title" tabindex="-1" hidden>
+      <p class="eyebrow">Resultado orientativo</p>
+      <h2 id="result-title">Tu nivel de inglés es</h2>
+      <div class="level-badge" id="level-result" aria-live="polite">—</div>
+      <p id="level-description"></p>
+      <p class="score-summary" id="score-summary"></p>
+      <div class="breakdown" id="level-breakdown" aria-label="Aciertos por bloque de dificultad"></div>
+      <button class="button button-secondary" id="restart-button" type="button">
+        Repetir el test
+      </button>
+    </section>
+
+    <footer class="page-footer">
+      <p>
+        Este test ofrece una estimación orientativa y no sustituye a una certificación oficial.
+        Niveles basados en el
+        <a href="https://www.coe.int/en/web/common-european-framework-reference-languages" rel="noreferrer">
+          Marco Común Europeo de Referencia para las Lenguas
+        </a>.
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "My name ___ Anna.",
+        options: ["am", "is", "are", "be"],
+        answer: 1
+      },
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "They ___ from Spain.",
+        options: ["is", "am", "are", "be"],
+        answer: 2
+      },
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "___ you like music?",
+        options: ["Are", "Do", "Does", "Have"],
+        answer: 1
+      },
+      {
+        level: "A1",
+        category: "Vocabulario",
+        prompt: "Choose the correct plural: one child, two ___.",
+        options: ["childs", "childes", "children", "childrens"],
+        answer: 2
+      },
+      {
+        level: "A1",
+        category: "Uso del inglés",
+        prompt: "I usually ___ breakfast at seven o'clock.",
+        options: ["have", "do", "make", "take"],
+        answer: 0
+      },
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "There ___ a book on the desk.",
+        options: ["are", "have", "is", "has"],
+        answer: 2
+      },
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "My brother is ___ than me.",
+        options: ["tall", "taller", "more tall", "the tallest"],
+        answer: 1
+      },
+      {
+        level: "A1",
+        category: "Uso del inglés",
+        prompt: "I can't find my keys. Where are ___?",
+        options: ["they", "them", "their", "it"],
+        answer: 0
+      },
+      {
+        level: "A1",
+        category: "Vocabulario",
+        prompt: "Saturday comes ___ Friday.",
+        options: ["before", "under", "after", "between"],
+        answer: 2
+      },
+      {
+        level: "A1",
+        category: "Gramática",
+        prompt: "What time ___ school start?",
+        options: ["do", "is", "does", "has"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "Yesterday, we ___ the science museum.",
+        options: ["visit", "visited", "have visited", "are visiting"],
+        answer: 1
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "I've lived in this town ___ 2022.",
+        options: ["for", "during", "since", "from"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "If it ___ tomorrow, we'll stay at home.",
+        options: ["rains", "will rain", "rained", "is rain"],
+        answer: 0
+      },
+      {
+        level: "A2",
+        category: "Uso del inglés",
+        prompt: "Marta is ___ to drive a car.",
+        options: ["enough old", "too old", "old enough", "so old"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "Have you ever ___ sushi?",
+        options: ["eat", "ate", "eaten", "eating"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "I was cooking when the phone ___.",
+        options: ["was ringing", "rang", "has rung", "rings"],
+        answer: 1
+      },
+      {
+        level: "A2",
+        category: "Gramática",
+        prompt: "This book is ___ than the film.",
+        options: ["interesting", "interestinger", "more interesting", "most interesting"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Uso del inglés",
+        prompt: "You ___ wear a uniform; it is optional.",
+        options: ["mustn't", "shouldn't", "don't have to", "can't"],
+        answer: 2
+      },
+      {
+        level: "A2",
+        category: "Vocabulario",
+        prompt: "The train to Oxford leaves ___ platform 4.",
+        options: ["at", "from", "by", "with"],
+        answer: 1
+      },
+      {
+        level: "A2",
+        category: "Comunicación",
+        prompt: "Someone asks: “Could you close the window, please?” Choose the best reply.",
+        options: ["Yes, I could.", "Certainly.", "No, I don't.", "It doesn't matter."],
+        answer: 1
+      },
+      {
+        level: "B1",
+        category: "Gramática",
+        prompt: "I ___ to work, but now I go by bus.",
+        options: ["used to drive", "use to drive", "was driving", "am used to drive"],
+        answer: 0
+      },
+      {
+        level: "B1",
+        category: "Gramática",
+        prompt: "By the time we arrived, the film ___.",
+        options: ["started", "has started", "had started", "was starting"],
+        answer: 2
+      },
+      {
+        level: "B1",
+        category: "Gramática",
+        prompt: "If I ___ more free time, I would learn Japanese.",
+        options: ["have", "will have", "had", "would have"],
+        answer: 2
+      },
+      {
+        level: "B1",
+        category: "Gramática",
+        prompt: "The report must ___ by Friday.",
+        options: ["finish", "be finished", "have finished", "be finishing"],
+        answer: 1
+      },
+      {
+        level: "B1",
+        category: "Uso del inglés",
+        prompt: "Despite ___ tired, Leo continued working.",
+        options: ["be", "was", "being", "to be"],
+        answer: 2
+      },
+      {
+        level: "B1",
+        category: "Uso del inglés",
+        prompt: "The boy denied ___ the window.",
+        options: ["to break", "breaking", "break", "to breaking"],
+        answer: 1
+      },
+      {
+        level: "B1",
+        category: "Vocabulario",
+        prompt: "Which phrasal verb means “postpone”?",
+        options: ["put off", "take after", "give up", "look into"],
+        answer: 0
+      },
+      {
+        level: "B1",
+        category: "Estilo indirecto",
+        prompt: "Mary said, “I can't come.” Choose the correct reported sentence.",
+        options: ["Mary said she can't come.", "Mary said that I couldn't come.", "Mary said she couldn't come.", "Mary told she couldn't come."],
+        answer: 2
+      },
+      {
+        level: "B1",
+        category: "Comprensión lectora",
+        prompt: "The shop normally closes at six. Paula arrived at quarter to six, but a note on the door said it had closed early for staff training. Why couldn't Paula enter?",
+        options: ["She arrived after six.", "The shop had changed its schedule that day.", "Staff training ended at six.", "She went to the wrong shop."],
+        answer: 1
+      },
+      {
+        level: "B1",
+        category: "Uso del inglés",
+        prompt: "“Unless you hurry, you'll miss the bus” means:",
+        options: ["If you hurry, you'll miss the bus.", "If you don't hurry, you'll miss the bus.", "You missed the bus because you hurried.", "You can miss the bus if you want."],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Gramática",
+        prompt: "Hardly ___ when the fire alarm went off.",
+        options: ["the meeting had started", "had the meeting started", "did the meeting start", "the meeting started"],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Uso del inglés",
+        prompt: "I'd rather you ___ me before borrowing my laptop.",
+        options: ["ask", "asked", "will ask", "have asked"],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Gramática",
+        prompt: "Not only ___ late, but he also forgot the documents.",
+        options: ["he arrived", "did he arrive", "he did arrive", "arrived he"],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Gramática",
+        prompt: "The new bridge ___ by next June.",
+        options: ["will complete", "will have completed", "will have been completed", "has been completed"],
+        answer: 2
+      },
+      {
+        level: "B2",
+        category: "Uso del inglés",
+        prompt: "She suggested ___ the issue at the next meeting.",
+        options: ["to discuss", "us to discuss", "discussing", "discuss"],
+        answer: 2
+      },
+      {
+        level: "B2",
+        category: "Gramática",
+        prompt: "Were I ___ your position, I would reconsider the offer.",
+        options: ["on", "at", "in", "by"],
+        answer: 2
+      },
+      {
+        level: "B2",
+        category: "Vocabulario",
+        prompt: "Despite repeated warnings, the company chose to ___ with the risky plan.",
+        options: ["bring about", "go ahead", "take over", "hold back"],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Comprensión lectora",
+        prompt: "The council's cycle scheme initially attracted criticism because it removed parking spaces. Six months later, traffic congestion had fallen and even several former opponents supported extending it. What changed their opinion?",
+        options: ["Parking became cheaper.", "The council cancelled the scheme.", "The scheme produced positive results.", "More roads were built."],
+        answer: 2
+      },
+      {
+        level: "B2",
+        category: "Gramática",
+        prompt: "It is essential that every applicant ___ proof of identity.",
+        options: ["provides", "provide", "provided", "will provide"],
+        answer: 1
+      },
+      {
+        level: "B2",
+        category: "Uso del inglés",
+        prompt: "No sooner had we sat down ___ the lights went out.",
+        options: ["when", "that", "than", "then"],
+        answer: 2
+      },
+      {
+        level: "C1",
+        category: "Gramática",
+        prompt: "Little ___ how much the decision would affect the entire organisation.",
+        options: ["they realised", "did they realise", "they did realise", "had they been realising"],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Uso del inglés",
+        prompt: "The proposal, ___ its considerable merits, is unlikely to be financially viable.",
+        options: ["however", "although", "despite of", "for all"],
+        answer: 3
+      },
+      {
+        level: "C1",
+        category: "Gramática",
+        prompt: "If it ___ for her timely intervention, the negotiations would have collapsed.",
+        options: ["wasn't", "hadn't been", "wouldn't be", "hasn't been"],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Uso del inglés",
+        prompt: "He speaks as though he ___ everything there is to know about the subject, but he clearly doesn't.",
+        options: ["knows", "knew", "has known", "would know"],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Vocabulario",
+        prompt: "The new measures are ___ intended to simplify the process, although critics doubt they will.",
+        options: ["ostensibly", "scarcely", "reluctantly", "subsequently"],
+        answer: 0
+      },
+      {
+        level: "C1",
+        category: "Vocabulario",
+        prompt: "The evidence presented does not ___ the claim that the treatment is effective.",
+        options: ["compile", "substantiate", "reconcile", "resume"],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Gramática",
+        prompt: "Choose the correct sentence.",
+        options: ["Only after the data was reanalysed the error became apparent.", "Only after the data was reanalysed did the error become apparent.", "Only after was the data reanalysed did the error become apparent.", "Only the error became apparent after did the data reanalyse."],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Comprensión lectora",
+        prompt: "The reviewer calls the novel's slow opening “a deliberate narrowing of the lens that makes the later expansion all the more striking.” What is implied?",
+        options: ["The opening weakens the rest of the novel.", "The novel never develops beyond its opening.", "The opening's limited scope creates an effective contrast.", "The reviewer recommends removing the opening."],
+        answer: 2
+      },
+      {
+        level: "C1",
+        category: "Comprensión del discurso",
+        prompt: "“Be that as it may, we still need a decision today.” What does “Be that as it may” express?",
+        options: ["Complete agreement", "A concession before returning to the main point", "Uncertainty about the date", "A request for more evidence"],
+        answer: 1
+      },
+      {
+        level: "C1",
+        category: "Gramática",
+        prompt: "The committee recommended that the policy ___ pending a full review.",
+        options: ["is suspended", "was suspended", "be suspended", "will be suspended"],
+        answer: 2
+      }
+    ];
+
+    const levelDescriptions = {
+      A1: "Puedes comprender y utilizar expresiones cotidianas muy frecuentes y comunicarte de forma sencilla.",
+      A2: "Puedes desenvolverte en intercambios habituales y comprender frases sobre temas cercanos y cotidianos.",
+      B1: "Puedes comprender los puntos principales de textos claros y desenvolverte en muchas situaciones habituales.",
+      B2: "Puedes comprender textos relativamente complejos e interactuar con bastante fluidez y espontaneidad.",
+      C1: "Puedes comprender textos exigentes y expresarte de forma fluida, flexible y precisa en contextos diversos."
+    };
+
+    const questionArea = document.querySelector("#question-area");
+    const form = document.querySelector("#level-test");
+    const testPanel = document.querySelector("#test-panel");
+    const resultPanel = document.querySelector("#result-panel");
+    const previousButton = document.querySelector("#previous-button");
+    const nextButton = document.querySelector("#next-button");
+    const finishButton = document.querySelector("#finish-button");
+    const restartButton = document.querySelector("#restart-button");
+    const progress = document.querySelector("#test-progress");
+    const progressLabel = document.querySelector("#progress-label");
+    const progressCount = document.querySelector("#progress-count");
+    const levelResult = document.querySelector("#level-result");
+    const levelDescription = document.querySelector("#level-description");
+    const scoreSummary = document.querySelector("#score-summary");
+    const levelBreakdown = document.querySelector("#level-breakdown");
+
+    let currentQuestion = 0;
+    let answers = Array(questions.length).fill(null);
+
+    function renderQuestion() {
+      const question = questions[currentQuestion];
+      const fieldset = document.createElement("fieldset");
+      const meta = document.createElement("p");
+      const legend = document.createElement("legend");
+      const options = document.createElement("div");
+
+      meta.className = "question-meta";
+      meta.textContent = question.category;
+      legend.textContent = question.prompt;
+      options.className = "options";
+
+      question.options.forEach((optionText, optionIndex) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        const text = document.createElement("span");
+
+        label.className = "option";
+        input.type = "radio";
+        input.name = `question-${currentQuestion}`;
+        input.value = optionIndex;
+        input.checked = answers[currentQuestion] === optionIndex;
+        text.textContent = optionText;
+
+        input.addEventListener("change", () => {
+          answers[currentQuestion] = optionIndex;
+          updateControls();
+        });
+
+        label.append(input, text);
+        options.append(label);
+      });
+
+      fieldset.append(meta, legend, options);
+      questionArea.replaceChildren(fieldset);
+      updateProgress();
+      updateControls();
+      questionArea.focus({ preventScroll: true });
+    }
+
+    function updateProgress() {
+      const displayedNumber = currentQuestion + 1;
+      progress.max = questions.length;
+      progress.value = displayedNumber;
+      progressLabel.textContent = `Pregunta ${displayedNumber} de ${questions.length}`;
+      progressCount.textContent = `${displayedNumber} / ${questions.length}`;
+    }
+
+    function updateControls() {
+      const isLastQuestion = currentQuestion === questions.length - 1;
+      const hasAnswer = answers[currentQuestion] !== null;
+
+      previousButton.disabled = currentQuestion === 0;
+      nextButton.hidden = isLastQuestion;
+      nextButton.disabled = !hasAnswer;
+      finishButton.hidden = !isLastQuestion;
+      finishButton.disabled = !hasAnswer;
+    }
+
+    function getEstimatedLevel(score) {
+      if (score >= 43) return "C1";
+      if (score >= 34) return "B2";
+      if (score >= 24) return "B1";
+      if (score >= 14) return "A2";
+      return "A1";
+    }
+
+    function showResult() {
+      const score = questions.reduce((total, question, index) => {
+        return total + Number(answers[index] === question.answer);
+      }, 0);
+      const level = getEstimatedLevel(score);
+      const levels = ["A1", "A2", "B1", "B2", "C1"];
+
+      levelResult.textContent = level;
+      levelDescription.textContent = levelDescriptions[level];
+      scoreSummary.textContent = `${score} respuestas correctas de ${questions.length}.`;
+      levelBreakdown.replaceChildren();
+
+      levels.forEach((blockLevel) => {
+        const blockQuestions = questions
+          .map((question, index) => ({ ...question, index }))
+          .filter((question) => question.level === blockLevel);
+        const correct = blockQuestions.filter(
+          (question) => answers[question.index] === question.answer
+        ).length;
+        const item = document.createElement("div");
+        const title = document.createElement("strong");
+        const detail = document.createElement("span");
+
+        item.className = "breakdown-item";
+        title.textContent = blockLevel;
+        detail.textContent = `${correct} / ${blockQuestions.length}`;
+        item.append(title, detail);
+        levelBreakdown.append(item);
+      });
+
+      testPanel.hidden = true;
+      resultPanel.hidden = false;
+      resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      levelResult.focus({ preventScroll: true });
+    }
+
+    nextButton.addEventListener("click", () => {
+      if (answers[currentQuestion] !== null && currentQuestion < questions.length - 1) {
+        currentQuestion += 1;
+        renderQuestion();
+      }
+    });
+
+    previousButton.addEventListener("click", () => {
+      if (currentQuestion > 0) {
+        currentQuestion -= 1;
+        renderQuestion();
+      }
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (answers.every((answer) => answer !== null)) {
+        showResult();
+      }
+    });
+
+    restartButton.addEventListener("click", () => {
+      currentQuestion = 0;
+      answers = Array(questions.length).fill(null);
+      resultPanel.hidden = true;
+      testPanel.hidden = false;
+      renderQuestion();
+      testPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    renderQuestion();
+  </script>
+</body>
+</html>

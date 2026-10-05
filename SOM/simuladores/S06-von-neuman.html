@@ -88,39 +88,22 @@
 
     .alu-panel {
       grid-area: alu;
-      display: grid;
-      place-items: center;
       min-height: 390px;
-      padding: 1.5rem;
       border-radius: 22px;
       overflow: hidden;
-      color: #fff;
-      background: linear-gradient(145deg, #1f3972, #293068 55%, #4e3484);
+      background: #06275d;
       box-shadow: 0 20px 45px rgba(29, 44, 90, .24);
       position: relative;
     }
-    .alu-panel::before {
-      content: "";
+    .alu-architecture {
       position: absolute;
       inset: 0;
-      opacity: .12;
-      background-image: repeating-linear-gradient(90deg, transparent 0 26px, #fff 27px 28px);
-      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
     }
-    .alu-shape {
-      position: relative;
-      width: min(310px, 92%);
-      aspect-ratio: 1.18;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(160deg, #26bdd0, #3376d8 65%, #7550c6);
-      clip-path: polygon(0 0, 34% 0, 50% 31%, 66% 0, 100% 0, 78% 100%, 22% 100%);
-      filter: drop-shadow(0 14px 14px rgba(0, 0, 0, .25));
-    }
-    .alu-shape strong { margin-top: 34%; font-size: clamp(2.4rem, 7vw, 4.5rem); letter-spacing: .08em; text-shadow: 0 3px 0 rgba(0,0,0,.15); }
-    .alu-caption { position: relative; margin-top: -2.2rem; text-align: center; }
-    .alu-caption b { display: block; font-size: 1.08rem; }
-    .alu-caption span { color: #cad7ff; font-size: .85rem; }
 
     .run {
       width: 100%;
@@ -257,10 +240,7 @@
       </article>
 
       <section class="alu-panel" aria-label="Unidad aritmético-lógica">
-        <div>
-          <div class="alu-shape" aria-hidden="true"><strong>ALU</strong></div>
-          <div class="alu-caption"><b>Unidad aritmético-lógica</b><span>Palabra de 8 bits</span></div>
-        </div>
+        <img class="alu-architecture" src="assets/alu-arquitectura-azul.png" alt="Arquitectura de una ALU de 8 bits: entradas A y B, unidades aritmética y lógica, selector, salida y flags C, Z, N y V">
       </section>
 
       <article class="card flags">

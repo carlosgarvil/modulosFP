@@ -385,6 +385,70 @@ button {
   color: var(--red);
 }
 
+.status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.status-help-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  padding: 0.2rem;
+  font: 600 0.9rem/1 var(--sans);
+  cursor: pointer;
+}
+
+.status-help-button:hover {
+  text-decoration: underline;
+}
+
+.status-help-button:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.help-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.status-help-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.status-help-list div {
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  padding-top: 0.7rem;
+}
+
+.status-help-list dt {
+  color: var(--green);
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.status-help-list dd {
+  margin: 0.25rem 0 0;
+  color: #dbe5e8;
+  line-height: 1.45;
+}
+
 .instruction-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(12rem, 1fr));
@@ -658,7 +722,13 @@ button {
       </section>
 
       <section class="panel status-panel">
-        <h2>Estado del sistema</h2>
+        <div class="status-heading">
+          <h2>Estado del sistema</h2>
+          <button class="status-help-button" id="statusHelpButton" type="button" aria-haspopup="dialog" aria-controls="statusHelpModal">
+            <span class="help-icon" aria-hidden="true">?</span>
+            <span>¿Qué significa?</span>
+          </button>
+        </div>
         <dl>
           <div>
             <dt>PC</dt>
@@ -724,6 +794,21 @@ button {
     </section>
   </div>
 
+  <div class="modal-backdrop" id="statusHelpModal" hidden>
+    <section class="instruction-modal" role="dialog" aria-modal="true" aria-labelledby="statusHelpTitle" aria-describedby="statusHelpSummary">
+      <button class="modal-close" id="statusHelpCloseButton" type="button" aria-label="Cerrar ayuda">×</button>
+      <div class="modal-code" aria-hidden="true">?</div>
+      <h2 id="statusHelpTitle">Estado del sistema</h2>
+      <p id="statusHelpSummary">Estos registros muestran qué está haciendo la CPU en cada momento.</p>
+      <dl class="status-help-list">
+        <div><dt>PC · Contador de programa</dt><dd>Dirección, en hexadecimal, de la próxima instrucción que se ejecutará.</dd></div>
+        <div><dt>IR · Registro de instrucción</dt><dd>Código de la última instrucción que la CPU ha leído de memoria.</dd></div>
+        <div><dt>AC · Acumulador</dt><dd>Registro de trabajo de 8 bits donde se guardan los datos y resultados de las operaciones.</dd></div>
+        <div><dt>Estado</dt><dd><strong>detenido</strong> indica que la CPU espera; <strong>ejecutando</strong>, que el programa está en marcha; y <strong>error</strong>, que se encontró una instrucción desconocida.</dd></div>
+      </dl>
+    </section>
+  </div>
+
   <script>
 const BYTE_SIZE = 256;
 const RUN_DELAY = 450;
@@ -770,7 +855,10 @@ const els = {
   modalFormat: document.getElementById("modalFormat"),
   modalOperand: document.getElementById("modalOperand"),
   modalEffect: document.getElementById("modalEffect"),
-  modalExample: document.getElementById("modalExample")
+  modalExample: document.getElementById("modalExample"),
+  statusHelpButton: document.getElementById("statusHelpButton"),
+  statusHelpModal: document.getElementById("statusHelpModal"),
+  statusHelpCloseButton: document.getElementById("statusHelpCloseButton")
 };
 
 const instructionNames = {
@@ -921,6 +1009,16 @@ function openInstructionModal(code) {
 
 function closeInstructionModal() {
   els.instructionModal.hidden = true;
+}
+
+function openStatusHelpModal() {
+  els.statusHelpModal.hidden = false;
+  els.statusHelpCloseButton.focus();
+}
+
+function closeStatusHelpModal() {
+  els.statusHelpModal.hidden = true;
+  els.statusHelpButton.focus();
 }
 
 function setState(nextState) {
@@ -1203,6 +1301,13 @@ function bindControls() {
     });
   });
   els.modalCloseButton.addEventListener("click", closeInstructionModal);
+  els.statusHelpButton.addEventListener("click", openStatusHelpModal);
+  els.statusHelpCloseButton.addEventListener("click", closeStatusHelpModal);
+  els.statusHelpModal.addEventListener("click", (event) => {
+    if (event.target === els.statusHelpModal) {
+      closeStatusHelpModal();
+    }
+  });
   els.instructionModal.addEventListener("click", (event) => {
     if (event.target === els.instructionModal) {
       closeInstructionModal();
@@ -1211,6 +1316,9 @@ function bindControls() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !els.instructionModal.hidden) {
       closeInstructionModal();
+    }
+    if (event.key === "Escape" && !els.statusHelpModal.hidden) {
+      closeStatusHelpModal();
     }
   });
 }

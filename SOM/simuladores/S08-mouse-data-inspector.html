@@ -82,9 +82,48 @@
         .bit-active {
             animation: bitPulse 0.3s ease-in-out;
         }
+
+        .home-link {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .48rem .7rem;
+            border: 1px solid #00f0ff;
+            border-radius: 9px;
+            background: rgba(17, 22, 34, .94);
+            color: #e2e8f0;
+            text-decoration: none;
+            font: 600 14px/1.2 Inter, sans-serif;
+            box-shadow: 0 4px 14px rgba(0, 240, 255, .18);
+            backdrop-filter: blur(6px);
+        }
+
+        .home-link:hover {
+            background: #1f293d;
+            color: #00f0ff;
+        }
+
+        .home-link:focus-visible {
+            outline: 3px solid #00f0ff;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 767px) {
+            .home-link {
+                position: static;
+                align-self: flex-start;
+                margin-bottom: 1rem;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-cyber-bg text-cyber-text flex flex-col p-4 md:p-6 bg-grid-pattern">
+
+    <a class="home-link" href="../../index.html" aria-label="Volver al índice de simuladores">← Simuladores</a>
 
     <header class="max-w-7xl w-full mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-cyber-border pb-4">
         <div>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspector de Datos de Ratón & Simulador HID USB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0d14',
+                            card: '#111622',
+                            border: '#1f293d',
+                            accent: '#00f0ff',
+                            neonGreen: '#00ff66',
+                            neonPink: '#ff0055',
+                            neonYellow: '#ffe600',
+                            text: '#e2e8f0'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"Fira Code"', 'monospace'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0d14;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glow-accent {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .glow-border {
+            border-color: #00f0ff;
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.15), 0 0 10px rgba(0, 240, 255, 0.15);
+        }
+
+        .bg-grid-pattern {
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        /* Pulse animation for active bit */
+        @keyframes bitPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .bit-active {
+            animation: bitPulse 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-cyber-bg text-cyber-text flex flex-col p-4 md:p-6 bg-grid-pattern">
+
+    <header class="max-w-7xl w-full mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-cyber-border pb-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <i class="fa-solid font-bold text-3xl text-cyber-accent fa-computer-mouse"></i>
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
+                    Inspector HID <span class="text-cyber-accent">USB Ratón</span>
+                </h1>
+            </div>
+            <p class="text-xs md:text-sm text-gray-400 mt-1">
+                Simulador interactivo de captura de paquetes hardware, deltas de movimiento y telemetría en tiempo real
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button id="btnLockPointer" class="flex items-center gap-2 bg-cyber-accent hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg transition-all text-xs md:text-sm shadow-lg shadow-cyber-accent/20">
+                <i class="fa-solid fa-crosshairs"></i>
+                <span>Activar Pointer Lock (Deltas puros)</span>
+            </button>
+            <button id="btnResetStats" class="flex items-center gap-2 bg-cyber-card hover:bg-cyber-border border border-cyber-border text-gray-300 font-semibold px-3 py-2 rounded-lg transition-all text-xs md:text-sm">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Resetear</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- LEFT COLUMN: Canvas Interactive Area & Real-Time Chart (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Interactive Canvas Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col relative overflow-hidden shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye text-cyber-accent"></i>
+                        Área de Captura Interactiva
+                    </h2>
+                    <span id="pointerLockStatus" class="text-xs px-2.5 py-1 rounded-full bg-red-950 text-red-400 border border-red-800 font-mono">
+                        Pointer Lock: INACTIVO
+                    </span>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="relative w-full h-[320px] md:h-[380px] bg-black/50 rounded-lg border border-cyber-border/80 overflow-hidden cursor-crosshair group">
+                    <canvas id="mouseCanvas" class="w-full h-full block"></canvas>
+
+                    <!-- Instruction Overlay inside Canvas -->
+                    <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-opacity pointer-events-none p-4 text-center">
+                        <i class="fa-solid fa-hand-pointer text-4xl text-cyber-accent mb-2 animate-bounce"></i>
+                        <p class="text-sm font-medium text-white">Mueve el ratón, haz clic o usa la rueda en esta zona</p>
+                        <p class="text-xs text-gray-400 mt-1 max-w-md">
+                            Haz clic para activar <span class="text-cyber-accent font-semibold">Pointer Lock</span> y capturar movimiento infinito sin límites de pantalla. (Presiona ESC para salir)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Real-time Quick Display below canvas -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-center">
+                    <div class="bg-black/30 border border-cyber-border/50 p-2 rounded-lg">
+                        <span class="text-[10px] uppercase tracking-wider text-gray-400 block font-mono">Posición Absoluta (X,Y)</span>
+                        <span id="valAbsPos" class="text-sm font-mono font-bold text-cyber-accent">0, 0</span>
+                    </div>
+                    <div class="bg-black/30 border border-cyber-border/50 p-2 rounded-lg">
+                        <span class="text-[10px] uppercase tracking-wider text-gray-400 block font-mono">Delta Relativo (ΔX, ΔY)</span>
+                        <span id="valDeltaPos" class="text-sm font-mono font-bold text-cyber-neonGreen">0, 0</span>
+                    </div>
+                    <div class="bg-black/30 border border-cyber-border/50 p-2 rounded-lg">
+                        <span class="text-[10px] uppercase tracking-wider text-gray-400 block font-mono">Velocidad Instantánea</span>
+                        <span id="valVelocity" class="text-sm font-mono font-bold text-cyber-neonYellow">0 px/s</span>
+                    </div>
+                    <div class="bg-black/30 border border-cyber-border/50 p-2 rounded-lg">
+                        <span class="text-[10px] uppercase tracking-wider text-gray-400 block font-mono">Polling Rate Est.</span>
+                        <span id="valPollingRate" class="text-sm font-mono font-bold text-cyber-neonPink">0 Hz</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telemetry Graph Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-cyber-neonGreen"></i>
+                        Telemetría de Velocidad y Deltas en Tiempo Real
+                    </h2>
+                    <span class="text-xs text-gray-400 font-mono">Últimos 100 muestras</span>
+                </div>
+                <div class="w-full h-[140px] bg-black/40 rounded-lg border border-cyber-border/60 p-1 relative">
+                    <canvas id="graphCanvas" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: USB HID Protocol View & Bitmask & Event Log (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- USB HID Packet Simulation Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-cyber-neonPink"></i>
+                        Estructura de Paquete USB HID (Report Buffer)
+                    </h2>
+                    <span class="text-[10px] font-mono bg-cyber-border text-gray-300 px-2 py-0.5 rounded">USB 8-bit RAW</span>
+                </div>
+
+                <!-- Hex / Binary Live Display -->
+                <div class="bg-black/60 border border-cyber-border/80 rounded-lg p-3 font-mono text-xs mb-4 space-y-2">
+                    <div class="flex justify-between items-center text-gray-400 border-b border-gray-800 pb-1">
+                        <span>BYTE</span>
+                        <span>CAMPO</span>
+                        <span>HEX</span>
+                        <span>BINARIO</span>
+                    </div>
+
+                    <!-- Byte 0: Buttons -->
+                    <div class="flex justify-between items-center" id="rowByte0">
+                        <span class="text-cyber-accent font-bold">Byte 0</span>
+                        <span class="text-gray-300">Botones</span>
+                        <span id="hexByte0" class="text-cyber-neonYellow">0x00</span>
+                        <span id="binByte0" class="text-cyber-neonGreen tracking-widest">00000000</span>
+                    </div>
+                    <!-- Byte 1: Delta X -->
+                    <div class="flex justify-between items-center" id="rowByte1">
+                        <span class="text-cyber-accent font-bold">Byte 1</span>
+                        <span class="text-gray-300">Delta X</span>
+                        <span id="hexByte1" class="text-cyber-neonYellow">0x00</span>
+                        <span id="binByte1" class="text-cyber-neonGreen tracking-widest">00000000</span>
+                    </div>
+                    <!-- Byte 2: Delta Y -->
+                    <div class="flex justify-between items-center" id="rowByte2">
+                        <span class="text-cyber-accent font-bold">Byte 2</span>
+                        <span class="text-gray-300">Delta Y</span>
+                        <span id="hexByte2" class="text-cyber-neonYellow">0x00</span>
+                        <span id="binByte2" class="text-cyber-neonGreen tracking-widest">00000000</span>
+                    </div>
+                    <!-- Byte 3: Scroll -->
+                    <div class="flex justify-between items-center" id="rowByte3">
+                        <span class="text-cyber-accent font-bold">Byte 3</span>
+                        <span class="text-gray-300">Rueda Scroll</span>
+                        <span id="hexByte3" class="text-cyber-neonYellow">0x00</span>
+                        <span id="binByte3" class="text-cyber-neonGreen tracking-widest">00000000</span>
+                    </div>
+                </div>
+
+                <!-- Button Bitmask Visual Breakdown -->
+                <h3 class="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Máscara de Bits de Botones (Bitmask)</h3>
+                <div class="grid grid-cols-5 gap-1.5 font-mono text-center text-xs">
+                    <div id="bitBtn0" class="p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors">
+                        <div class="text-[9px] text-gray-400">Bit 0</div>
+                        <div class="font-bold my-0.5">M1</div>
+                        <div class="text-[10px]">Izq</div>
+                    </div>
+                    <div id="bitBtn1" class="p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors">
+                        <div class="text-[9px] text-gray-400">Bit 1</div>
+                        <div class="font-bold my-0.5">M2</div>
+                        <div class="text-[10px]">Der</div>
+                    </div>
+                    <div id="bitBtn2" class="p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors">
+                        <div class="text-[9px] text-gray-400">Bit 2</div>
+                        <div class="font-bold my-0.5">M3</div>
+                        <div class="text-[10px]">Central</div>
+                    </div>
+                    <div id="bitBtn3" class="p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors">
+                        <div class="text-[9px] text-gray-400">Bit 3</div>
+                        <div class="font-bold my-0.5">M4</div>
+                        <div class="text-[10px]">Atrás</div>
+                    </div>
+                    <div id="bitBtn4" class="p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors">
+                        <div class="text-[9px] text-gray-400">Bit 4</div>
+                        <div class="font-bold my-0.5">M5</div>
+                        <div class="text-[10px]">Adelante</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Log Console Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col flex-grow shadow-xl h-[280px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-cyber-accent"></i>
+                        Registro de Eventos DOM / HID
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button id="btnPauseLog" class="text-xs px-2 py-1 bg-black/40 hover:bg-cyber-border border border-cyber-border rounded text-gray-300">
+                            <i class="fa-solid fa-pause"></i> Pausar
+                        </button>
+                        <button id="btnClearLog" class="text-xs px-2 py-1 bg-black/40 hover:bg-cyber-border border border-cyber-border rounded text-gray-300">
+                            <i class="fa-solid fa-trash"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log Output Console -->
+                <div id="logConsole" class="flex-grow bg-black/70 border border-cyber-border/70 rounded-lg p-2.5 font-mono text-[11px] overflow-y-auto space-y-1 text-gray-300">
+                    <div class="text-gray-500 italic">// Esperando eventos del dispositivo...</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        const mouseCanvas = document.getElementById('mouseCanvas');
+        const ctx = mouseCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const gCtx = graphCanvas.getContext('2d');
+
+        const canvasOverlay = document.getElementById('canvasOverlay');
+        const pointerLockStatus = document.getElementById('pointerLockStatus');
+        const btnLockPointer = document.getElementById('btnLockPointer');
+        const btnResetStats = document.getElementById('btnResetStats');
+        const logConsole = document.getElementById('logConsole');
+        const btnPauseLog = document.getElementById('btnPauseLog');
+        const btnClearLog = document.getElementById('btnClearLog');
+
+        // Text Display Elements
+        const valAbsPos = document.getElementById('valAbsPos');
+        const valDeltaPos = document.getElementById('valDeltaPos');
+        const valVelocity = document.getElementById('valVelocity');
+        const valPollingRate = document.getElementById('valPollingRate');
+
+        // Hex/Binary Elements
+        const hexByte0 = document.getElementById('hexByte0');
+        const binByte0 = document.getElementById('binByte0');
+        const hexByte1 = document.getElementById('hexByte1');
+        const binByte1 = document.getElementById('binByte1');
+        const hexByte2 = document.getElementById('hexByte2');
+        const binByte2 = document.getElementById('binByte2');
+        const hexByte3 = document.getElementById('hexByte3');
+        const binByte3 = document.getElementById('binByte3');
+
+        // State variables
+        let mouseState = {
+            x: 0,
+            y: 0,
+            dx: 0,
+            dy: 0,
+            wheelDelta: 0,
+            buttons: 0,
+            velocity: 0,
+            history: [],
+            clicks: []
+        };
+
+        let pollingStats = {
+            timestamps: [],
+            currentHz: 0
+        };
+
+        let graphHistory = []; // stores velocity history for chart
+        const maxGraphHistory = 100;
+
+        let logPaused = false;
+        let isPointerLocked = false;
+
+        function resizeCanvases() {
+            const rect = mouseCanvas.parentElement.getBoundingClientRect();
+            mouseCanvas.width = rect.width;
+            mouseCanvas.height = rect.height;
+
+            const gRect = graphCanvas.parentElement.getBoundingClientRect();
+            graphCanvas.width = gRect.width;
+            graphCanvas.height = gRect.height;
+
+            if (mouseState.x === 0 && mouseState.y === 0) {
+                mouseState.x = mouseCanvas.width / 2;
+                mouseState.y = mouseCanvas.height / 2;
+            }
+        }
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        function toSignedByte(val) {
+            // Clamp to signed 8-bit integer (-128 to 127)
+            let clamped = Math.max(-128, Math.min(127, Math.round(val)));
+            return clamped < 0 ? clamped + 256 : clamped;
+        }
+
+        function toHex(byteVal) {
+            return '0x' + (byteVal & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+        }
+
+        function toBin(byteVal) {
+            return (byteVal & 0xFF).toString(2).padStart(8, '0');
+        }
+
+        function appendLog(eventName, details, colorClass = 'text-cyber-accent') {
+            if (logPaused) return;
+
+            const timeStr = new Date().toISOString().slice(11, 23);
+            const entry = document.createElement('div');
+            entry.className = 'flex items-start gap-2 border-b border-gray-900/60 pb-0.5';
+            entry.innerHTML = `
+                <span class="text-gray-500 font-mono text-[10px]">${timeStr}</span>
+                <span class="font-bold ${colorClass} min-w-[90px]">[${eventName}]</span>
+                <span class="text-gray-300 flex-grow truncate">${details}</span>
+            `;
+
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight;
+
+            // Keep max 150 entries in log DOM
+            if (logConsole.children.length > 150) {
+                logConsole.removeChild(logConsole.children[0]);
+            }
+        }
+
+        btnLockPointer.addEventListener('click', () => {
+            mouseCanvas.requestPointerLock();
+        });
+
+        mouseCanvas.addEventListener('click', () => {
+            mouseCanvas.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            isPointerLocked = (document.pointerLockElement === mouseCanvas);
+            if (isPointerLocked) {
+                pointerLockStatus.textContent = 'Pointer Lock: ACTIVO';
+                pointerLockStatus.className = 'text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono';
+                canvasOverlay.classList.add('opacity-0');
+                appendLog('POINTER_LOCK', 'Pointer Lock activado. Puntero bloqueado.', 'text-cyber-neonGreen');
+            } else {
+                pointerLockStatus.textContent = 'Pointer Lock: INACTIVO';
+                pointerLockStatus.className = 'text-xs px-2.5 py-1 rounded-full bg-red-950 text-red-400 border border-red-800 font-mono';
+                canvasOverlay.classList.remove('opacity-0');
+                appendLog('POINTER_LOCK', 'Pointer Lock desactivado.', 'text-cyber-neonPink');
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            const rect = mouseCanvas.getBoundingClientRect();
+            const now = performance.now();
+
+            // Calculate Polling Rate (Hz)
+            pollingStats.timestamps.push(now);
+            pollingStats.timestamps = pollingStats.timestamps.filter(t => now - t <= 1000);
+            pollingStats.currentHz = pollingStats.timestamps.length;
+
+            // Calculate Deltas
+            const dx = e.movementX || 0;
+            const dy = e.movementY || 0;
+
+            if (isPointerLocked) {
+                mouseState.x += dx;
+                mouseState.y += dy;
+
+                // Keep point bounded inside canvas for visual simplicity
+                mouseState.x = Math.max(0, Math.min(mouseCanvas.width, mouseState.x));
+                mouseState.y = Math.max(0, Math.min(mouseCanvas.height, mouseState.y));
+            } else {
+                mouseState.x = e.clientX - rect.left;
+                mouseState.y = e.clientY - rect.top;
+            }
+
+            mouseState.dx = dx;
+            mouseState.dy = dy;
+            mouseState.buttons = e.buttons;
+
+            // Calculate instant velocity (pixels/sec)
+            const dt = pollingStats.timestamps.length > 1 ? 
+                (now - pollingStats.timestamps[pollingStats.timestamps.length - 2]) / 1000 : 0.016;
+            
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            mouseState.velocity = dt > 0 ? Math.round(dist / dt) : 0;
+
+            // Add position to trail history
+            mouseState.history.push({ x: mouseState.x, y: mouseState.y, dx, dy, life: 1.0 });
+            if (mouseState.history.length > 25) mouseState.history.shift();
+
+            // Update UI
+            updateUI(e);
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            mouseState.buttons = e.buttons;
+            updateUI(e);
+
+            // Add click ripple to canvas
+            const rect = mouseCanvas.getBoundingClientRect();
+            const clickX = isPointerLocked ? mouseState.x : (e.clientX - rect.left);
+            const clickY = isPointerLocked ? mouseState.y : (e.clientY - rect.top);
+
+            mouseState.clicks.push({ x: clickX, y: clickY, radius: 5, maxRadius: 35, alpha: 1.0, button: e.button });
+
+            appendLog('MOUSEDOWN', `Botón presionado: ${e.button} (bitmask: ${e.buttons})`, 'text-cyber-neonYellow');
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            mouseState.buttons = e.buttons;
+            updateUI(e);
+            appendLog('MOUSEUP', `Botón liberado: ${e.button} (bitmask: ${e.buttons})`, 'text-gray-400');
+        });
+
+        window.addEventListener('wheel', (e) => {
+            // Register scroll wheel delta
+            const wheelSign = Math.sign(e.deltaY);
+            mouseState.wheelDelta = wheelSign;
+
+            updateUI(e);
+            appendLog('WHEEL', `Scroll ΔZ: ${e.deltaY > 0 ? '+' : ''}${e.deltaY} (RAW byte: ${wheelSign})`, 'text-cyber-accent');
+
+            // Reset wheel delta after delay
+            setTimeout(() => {
+                mouseState.wheelDelta = 0;
+                updateRawBytesUI();
+            }, 300);
+        }, { passive: true });
+
+        function updateUI(e) {
+            // Absolute Coordinates
+            valAbsPos.textContent = `${Math.round(mouseState.x)}, ${Math.round(mouseState.y)}`;
+            
+            // Deltas
+            valDeltaPos.textContent = `${mouseState.dx > 0 ? '+' : ''}${mouseState.dx}, ${mouseState.dy > 0 ? '+' : ''}${mouseState.dy}`;
+            
+            // Velocity and Polling Rate
+            valVelocity.textContent = `${mouseState.velocity} px/s`;
+            valPollingRate.textContent = `${pollingStats.currentHz} Hz`;
+
+            updateRawBytesUI();
+            updateBitmaskUI(mouseState.buttons);
+        }
+
+        function updateRawBytesUI() {
+            // Byte 0: Buttons
+            const b0 = mouseState.buttons & 0xFF;
+            hexByte0.textContent = toHex(b0);
+            binByte0.textContent = toBin(b0);
+
+            // Byte 1: Delta X
+            const b1 = toSignedByte(mouseState.dx);
+            hexByte1.textContent = toHex(b1);
+            binByte1.textContent = toBin(b1);
+
+            // Byte 2: Delta Y
+            const b2 = toSignedByte(mouseState.dy);
+            hexByte2.textContent = toHex(b2);
+            binByte2.textContent = toBin(b2);
+
+            // Byte 3: Scroll Wheel
+            const b3 = toSignedByte(mouseState.wheelDelta);
+            hexByte3.textContent = toHex(b3);
+            binByte3.textContent = toBin(b3);
+        }
+
+        function updateBitmaskUI(buttons) {
+            for (let bit = 0; bit < 5; bit++) {
+                const bitElem = document.getElementById(`bitBtn${bit}`);
+                const isPressed = (buttons & (1 << bit)) !== 0;
+
+                if (isPressed) {
+                    bitElem.className = 'p-2 rounded bg-cyber-accent/20 border border-cyber-accent text-cyber-accent font-bold bit-active';
+                } else {
+                    bitElem.className = 'p-2 rounded bg-black/40 border border-cyber-border text-gray-500 transition-colors';
+                }
+            }
+        }
+
+        btnPauseLog.addEventListener('click', () => {
+            logPaused = !logPaused;
+            btnPauseLog.innerHTML = logPaused ? 
+                '<i class="fa-solid fa-play"></i> Reanudar' : 
+                '<i class="fa-solid fa-pause"></i> Pausar';
+            btnPauseLog.classList.toggle('text-cyber-neonYellow', logPaused);
+        });
+
+        btnClearLog.addEventListener('click', () => {
+            logConsole.innerHTML = '<div class="text-gray-500 italic">// Registro limpiado.</div>';
+        });
+
+        btnResetStats.addEventListener('click', () => {
+            mouseState.history = [];
+            mouseState.clicks = [];
+            graphHistory = [];
+            pollingStats.timestamps = [];
+            valVelocity.textContent = '0 px/s';
+            valPollingRate.textContent = '0 Hz';
+            valDeltaPos.textContent = '0, 0';
+            appendLog('SYSTEM', 'Estadísticas y telemetría reiniciadas.', 'text-cyber-accent');
+        });
+
+        function renderCanvas() {
+            ctx.clearRect(0, 0, mouseCanvas.width, mouseCanvas.height);
+
+            // 1. Draw Grid Lines on Canvas
+            ctx.strokeStyle = 'rgba(31, 41, 61, 0.4)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < mouseCanvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, mouseCanvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < mouseCanvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(mouseCanvas.width, y);
+                ctx.stroke();
+            }
+
+            // 2. Render Motion Trail
+            if (mouseState.history.length > 1) {
+                for (let i = 0; i < mouseState.history.length - 1; i++) {
+                    const p1 = mouseState.history[i];
+                    const p2 = mouseState.history[i + 1];
+                    const alpha = (i / mouseState.history.length);
+
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.7})`;
+                    ctx.lineWidth = alpha * 4;
+                    ctx.stroke();
+                }
+            }
+
+            // 3. Render Click Ripples
+            for (let i = mouseState.clicks.length - 1; i >= 0; i--) {
+                const c = mouseState.clicks[i];
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = c.button === 0 ? `rgba(0, 255, 102, ${c.alpha})` : `rgba(255, 0, 85, ${c.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                c.radius += 1.5;
+                c.alpha -= 0.03;
+
+                if (c.alpha <= 0) {
+                    mouseState.clicks.splice(i, 1);
+                }
+            }
+
+            // 4. Render Velocity/Delta Vector Arrow from Pointer
+            if (mouseState.dx !== 0 || mouseState.dy !== 0) {
+                const vectorScale = 3;
+                const targetX = mouseState.x + (mouseState.dx * vectorScale);
+                const targetY = mouseState.y + (mouseState.dy * vectorScale);
+
+                ctx.beginPath();
+                ctx.moveTo(mouseState.x, mouseState.y);
+                ctx.lineTo(targetX, targetY);
+                ctx.strokeStyle = '#ffe600';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Vector head
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffe600';
+                ctx.fill();
+            }
+
+            // 5. Render Main Cursor Target
+            ctx.beginPath();
+            ctx.arc(mouseState.x, mouseState.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#00f0ff';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Decay deltas smoothly for display when movement stops
+            mouseState.dx *= 0.85;
+            mouseState.dy *= 0.85;
+            if (Math.abs(mouseState.dx) < 0.1) mouseState.dx = 0;
+            if (Math.abs(mouseState.dy) < 0.1) mouseState.dy = 0;
+
+            requestAnimationFrame(renderCanvas);
+        }
+
+        function renderGraph() {
+            // Push current velocity to graph history
+            graphHistory.push(mouseState.velocity);
+            if (graphHistory.length > maxGraphHistory) {
+                graphHistory.shift();
+            }
+
+            gCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+
+            const maxVel = Math.max(500, Math.max(...graphHistory));
+            const w = graphCanvas.width;
+            const h = graphCanvas.height;
+            const step = w / (maxGraphHistory - 1);
+
+            // Draw area fill
+            gCtx.beginPath();
+            gCtx.moveTo(0, h);
+            for (let i = 0; i < graphHistory.length; i++) {
+                const x = i * step;
+                const y = h - (graphHistory[i] / maxVel) * (h - 10);
+                gCtx.lineTo(x, y);
+            }
+            gCtx.lineTo((graphHistory.length - 1) * step, h);
+            gCtx.closePath();
+
+            const gradient = gCtx.createLinearGradient(0, 0, 0, h);
+            gradient.addColorStop(0, 'rgba(0, 255, 102, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 255, 102, 0.0)');
+            gCtx.fillStyle = gradient;
+            gCtx.fill();
+
+            // Draw line
+            gCtx.beginPath();
+            for (let i = 0; i < graphHistory.length; i++) {
+                const x = i * step;
+                const y = h - (graphHistory[i] / maxVel) * (h - 10);
+                if (i === 0) gCtx.moveTo(x, y);
+                else gCtx.lineTo(x, y);
+            }
+            gCtx.strokeStyle = '#00ff66';
+            gCtx.lineWidth = 1.5;
+            gCtx.stroke();
+        }
+
+        window.onload = function() {
+            renderCanvas();
+            setInterval(renderGraph, 50); // 20 FPS graph refresh
+            appendLog('SYSTEM', 'Inspector HID cargado correctamente. Listo para capturar.', 'text-cyber-neonGreen');
+        };
+    </script>
+</body>
+</html>

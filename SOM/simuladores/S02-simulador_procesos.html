@@ -20,6 +20,7 @@
   label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 4px}
   input,button,select{font:inherit} input[type="number"],input[type="text"]{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:white}
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .randomGenerator{margin:0 0 14px;padding:11px;border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff}.randomGenerator label{margin:0 0 5px;color:#374151;font-weight:650}.randomControls{display:grid;grid-template-columns:1fr auto;gap:8px}.randomControls select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:white;color:var(--text)}
   button{border:0;border-radius:10px;padding:10px 12px;background:var(--accent);color:white;cursor:pointer;font-weight:650}button.secondary{background:#475569}button.ghost{background:#e5e7eb;color:#111827}button.danger{background:var(--danger)}button:disabled{opacity:.55;cursor:not-allowed}
   table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left}th{color:#374151;background:#f9fafb}.small{font-size:.82rem;color:var(--muted)}#processTable tbody tr{transition:background-color .16s ease,box-shadow .16s ease}#processTable tbody tr.process-highlight{background:var(--process-color);box-shadow:inset 3px 0 color-mix(in srgb,var(--process-color) 65%,#111827)}
   .simbar{margin:14px 0 18px}.barhead{display:flex;justify-content:space-between;gap:12px;margin-bottom:6px}.algoTitle{display:flex;align-items:center;gap:7px}.algoname{font-weight:750}.stats{font-size:.82rem;color:var(--muted)}
@@ -42,6 +43,18 @@
 <div class="grid">
 <section class="card">
   <h2>1. Procesos</h2>
+  <div class="randomGenerator">
+    <label for="randomLevel">Generador aleatorio</label>
+    <div class="randomControls">
+      <select id="randomLevel" aria-label="Dificultad del conjunto de procesos">
+        <option value="2">Fácil (2 procesos)</option>
+        <option value="3">Intermedio (3 procesos)</option>
+        <option value="4">Avanzado (4 procesos)</option>
+      </select>
+      <button id="randomBtn" type="button">Generar</button>
+    </div>
+    <span class="small">Sustituye los procesos actuales por un nuevo ejercicio.</span>
+  </div>
   <div class="row">
     <div><label>Nombre</label><input id="pName" type="text" value="P1" /></div>
     <div><label>Llegada</label><input id="pArrival" type="number" min="0" value="0" /></div>
@@ -153,6 +166,8 @@ function err(t){document.getElementById('err').textContent=t||''}
 function renderTable(){const tb=document.querySelector('#processTable tbody');tb.innerHTML='';processes.forEach((p,i)=>{tb.insertAdjacentHTML('beforeend',`<tr data-process-index="${i}" style="--process-color:${colors[i]}"><td><strong>${p.name}</strong></td><td>${p.arrival}</td><td>${p.burst}</td><td>${p.priority}</td><td><button class="ghost" onclick="removeProc(${i})">×</button></td></tr>`)});document.getElementById('addBtn').disabled=processes.length>=colors.length;renderLegend();resetProposal();}
 window.removeProc=i=>{processes.splice(i,1);renderTable();prepare();}
 function addProcess(){if(processes.length>=colors.length){err(`El simulador admite un máximo de ${colors.length} procesos.`);return}const name=document.getElementById('pName').value.trim()||`P${processes.length+1}`;const arrival=+document.getElementById('pArrival').value;const burst=+document.getElementById('pBurst').value;const priority=+document.getElementById('pPriority').value;if(!Number.isInteger(arrival)||arrival<0||!Number.isInteger(burst)||burst<1||!Number.isInteger(priority)||priority<1){err('Revisa llegada, CPU y prioridad. Deben ser enteros válidos.');return}if(processes.some(p=>p.name===name)){err('Ya existe un proceso con ese nombre.');return}err('');processes.push({name,arrival,burst,priority});document.getElementById('pName').value=`P${processes.length+1}`;renderTable();prepare();}
+function randomInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function generateRandomProcesses(){const count=+document.getElementById('randomLevel').value;processes=Array.from({length:count},(_,i)=>({name:`P${i+1}`,arrival:i===0?0:randomInt(0,5),burst:randomInt(1,8),priority:randomInt(1,count)})).sort((a,b)=>a.arrival-b.arrival||Number(a.name.slice(1))-Number(b.name.slice(1)));err('');document.getElementById('pName').value=`P${count+1}`;renderTable();prepare();}
 function loadSample(){processes=[{name:'P1',arrival:0,burst:8,priority:2},{name:'P2',arrival:1,burst:4,priority:1},{name:'P3',arrival:2,burst:2,priority:3},{name:'P4',arrival:3,burst:1,priority:1},{name:'P5',arrival:6,burst:3,priority:2}];renderTable();prepare();}
 function createSim(id){return {id, procs:cloneProcs(), timeline:[], ready:[], running:null, rrQuantumLeft:+document.getElementById('quantum').value, completed:0};}
 function prepare(){stopAuto();currentTime=0;sims={};algorithms.forEach(a=>sims[a.id]=createSim(a.id));maxEnd=processes.reduce((s,p)=>s+p.burst,0)+Math.min(...processes.map(p=>p.arrival).concat([0]));renderSim();renderMetrics(false);}
@@ -188,7 +203,7 @@ function closeHelp(){document.getElementById('helpModal').classList.remove('open
 document.getElementById('closeHelpBtn').onclick=closeHelp;
 document.getElementById('helpModal').onclick=e=>{if(e.target.id==='helpModal')closeHelp();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp();});
-document.getElementById('addBtn').onclick=addProcess;document.getElementById('sampleBtn').onclick=loadSample;document.getElementById('clearBtn').onclick=()=>{processes=[];renderTable();prepare();};document.getElementById('clearProposalBtn').onclick=resetProposal;document.getElementById('resetBtn').onclick=prepare;document.getElementById('stepBtn').onclick=stepAll;document.getElementById('runBtn').onclick=runAll;document.getElementById('autoBtn').onclick=toggleAuto;document.getElementById('preemptive').onchange=prepare;document.getElementById('quantum').onchange=prepare;loadSample();
+document.getElementById('addBtn').onclick=addProcess;document.getElementById('randomBtn').onclick=generateRandomProcesses;document.getElementById('sampleBtn').onclick=loadSample;document.getElementById('clearBtn').onclick=()=>{processes=[];renderTable();prepare();};document.getElementById('clearProposalBtn').onclick=resetProposal;document.getElementById('resetBtn').onclick=prepare;document.getElementById('stepBtn').onclick=stepAll;document.getElementById('runBtn').onclick=runAll;document.getElementById('autoBtn').onclick=toggleAuto;document.getElementById('preemptive').onchange=prepare;document.getElementById('quantum').onchange=prepare;loadSample();
 </script>
 </body>
 </html>

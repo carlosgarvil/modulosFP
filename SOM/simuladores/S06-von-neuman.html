@@ -40,6 +40,23 @@
     .eyebrow { color: var(--blue); font-size: .78rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
     h1 { margin: .25rem 0 .45rem; font-size: clamp(2rem, 5vw, 3.35rem); line-height: 1.08; }
     .hero p { max-width: 720px; margin: 0 auto; color: var(--muted); font-size: 1.05rem; }
+    .architecture-note {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: .8rem;
+      align-items: start;
+      margin: 0 auto 1rem;
+      padding: .9rem 1rem;
+      border: 1px solid #bcd8ea;
+      border-left: 5px solid var(--cyan);
+      border-radius: 13px;
+      background: rgba(239, 251, 252, .92);
+      color: #245c65;
+      line-height: 1.5;
+    }
+    .architecture-note .note-icon { font-size: 1.25rem; line-height: 1.35; }
+    .architecture-note p { margin: 0; }
+    .architecture-note strong { color: var(--ink); }
 
     .simulator {
       display: grid;
@@ -88,7 +105,7 @@
 
     .alu-panel {
       grid-area: alu;
-      min-height: 390px;
+      aspect-ratio: 2 / 3;
       border-radius: 22px;
       overflow: hidden;
       background: #06275d;
@@ -101,7 +118,7 @@
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center;
     }
 
@@ -136,6 +153,58 @@
     .flag-code { color: var(--muted); font: 800 .9rem ui-monospace, Consolas, monospace; }
     .flag.active { border-color: #72cfad; background: var(--green-soft); color: #11664a; }
     .flag.active .lamp { background: #2bd28f; box-shadow: 0 0 0 4px rgba(43, 210, 143, .17), 0 0 16px #2bd28f; }
+    .flags-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+    .flags-heading h2 { margin: 0; }
+    .help-button {
+      display: inline-grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      flex: 0 0 auto;
+      border: 1px solid #aebed5;
+      border-radius: 50%;
+      background: #edf3ff;
+      color: var(--blue-dark);
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .help-button:hover { background: #dfe9ff; }
+    .help-button:focus-visible, .modal-close:focus-visible { outline: 3px solid rgba(50, 104, 213, .32); outline-offset: 2px; }
+
+    .flags-modal {
+      width: min(590px, calc(100% - 2rem));
+      max-height: calc(100vh - 2rem);
+      padding: 0;
+      border: 0;
+      border-radius: 18px;
+      color: var(--ink);
+      background: var(--card);
+      box-shadow: 0 24px 70px rgba(12, 27, 55, .3);
+    }
+    .flags-modal::backdrop { background: rgba(14, 27, 50, .64); backdrop-filter: blur(3px); }
+    .modal-content { padding: 1.35rem; }
+    .modal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+    .modal-heading h2 { margin: 0; font-size: 1.35rem; }
+    .modal-intro { margin: .35rem 0 1rem; color: var(--muted); }
+    .modal-close {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      flex: 0 0 auto;
+      border: 0;
+      border-radius: 50%;
+      background: #edf1f7;
+      color: var(--ink);
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .flag-help-list { display: grid; gap: .7rem; margin: 0; }
+    .flag-help-item { display: grid; grid-template-columns: 2rem 1fr; gap: .75rem; padding: .75rem; border-radius: 11px; background: #f3f7fc; }
+    .flag-help-item dt { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: #fff; background: var(--blue); font-weight: 900; }
+    .flag-help-item dd { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.45; }
+    .flag-help-item strong { color: var(--ink); }
 
     .result-number { margin: .45rem 0 .15rem; font-size: clamp(2.4rem, 7vw, 4.3rem); font-weight: 900; color: var(--blue-dark); line-height: 1; }
     .result-binary { display: block; color: var(--violet); font: 850 clamp(1.25rem, 4vw, 1.8rem) ui-monospace, Consolas, monospace; letter-spacing: .12em; }
@@ -169,13 +238,11 @@
         grid-template-columns: 1fr 1fr;
         grid-template-areas: "input-a input-b" "operation flags" "alu alu" "output output" "bitwise bitwise";
       }
-      .alu-panel { min-height: 330px; }
     }
     @media (max-width: 560px) {
       .wrap { width: min(100% - 1rem, 1120px); }
       .hero { padding-top: 1.5rem; }
       .simulator { grid-template-columns: 1fr; grid-template-areas: "input-a" "input-b" "operation" "alu" "output" "flags" "bitwise"; }
-      .alu-panel { min-height: 300px; }
     }
     .home-link{position:fixed;top:1rem;left:1rem;z-index:1000;display:inline-flex;align-items:center;gap:.4rem;padding:.48rem .7rem;border:1px solid #bdcadc;border-radius:9px;background:#fffffff2;color:#172238;text-decoration:none;font:600 14px/1.2 system-ui,sans-serif;box-shadow:0 4px 14px #1722381f;backdrop-filter:blur(6px)}.home-link:hover{background:#e8efff}.home-link:focus-visible{outline:3px solid #3569d4;outline-offset:3px}
   </style>
@@ -189,10 +256,14 @@
   </header>
 
   <main class="wrap">
+    <aside class="architecture-note" aria-label="Relación entre las entradas del simulador y los registros de la ALU">
+      <span class="note-icon" aria-hidden="true">ℹ️</span>
+      <p><strong>¿De dónde proceden realmente los operandos?</strong> En esta arquitectura simplificada, la ALU no recibe dos valores aislados llamados A y B: trabaja con datos almacenados en registros. La <strong>Entrada A</strong> del simulador representa el valor cargado en el <strong>registro de entrada</strong>, mientras que la <strong>Entrada B</strong> representa el valor que ya contiene el <strong>acumulador</strong>. Después de ejecutar la operación, el resultado vuelve a guardarse en el acumulador para poder utilizarse en la siguiente operación.</p>
+    </aside>
     <section class="simulator" aria-label="Simulador de unidad aritmético-lógica">
       <article class="card input-a">
         <h2>Entrada A</h2>
-        <p class="help">Operando de 8 bits</p>
+        <p class="help">Registro de entrada · operando de 8 bits</p>
         <div class="field">
           <label for="decimalA">Decimal (−128…127)</label>
           <input id="decimalA" type="number" min="-128" max="127" step="1" value="120" inputmode="numeric">
@@ -205,7 +276,7 @@
 
       <article class="card input-b" id="inputBCard">
         <h2>Entrada B</h2>
-        <p class="help">Operando de 8 bits</p>
+        <p class="help">Acumulador · operando de 8 bits</p>
         <div class="field">
           <label for="decimalB">Decimal (−128…127)</label>
           <input id="decimalB" type="number" min="-128" max="127" step="1" value="10" inputmode="numeric">
@@ -244,7 +315,10 @@
       </section>
 
       <article class="card flags">
-        <h2>Flags</h2>
+        <div class="flags-heading">
+          <h2>Flags</h2>
+          <button id="flagsHelp" class="help-button" type="button" aria-label="Ayuda sobre los flags" aria-haspopup="dialog">?</button>
+        </div>
         <p class="help">Se iluminan cuando valen 1</p>
         <div class="flag-list">
           <div class="flag" id="flagC"><span class="lamp"></span><span class="flag-name">Acarreo</span><span class="flag-code">C=0</span></div>
@@ -276,6 +350,24 @@
     </aside>
   </main>
 
+  <dialog id="flagsModal" class="flags-modal" aria-labelledby="flagsModalTitle">
+    <div class="modal-content">
+      <div class="modal-heading">
+        <div>
+          <h2 id="flagsModalTitle">¿Qué indican los flags?</h2>
+          <p class="modal-intro">Los flags son bits de estado que la ALU actualiza automáticamente después de cada operación. No forman parte del resultado numérico: guardan información adicional sobre él, como si ha sido cero, negativo, ha producido un acarreo o ha superado el rango disponible. La CPU consulta estos indicadores para comparar valores, detectar situaciones especiales y decidir qué instrucción ejecutar a continuación; por ejemplo, realizar un salto condicional cuando dos valores son iguales o cuando un resultado es negativo.</p>
+        </div>
+        <button id="closeFlagsModal" class="modal-close" type="button" aria-label="Cerrar ayuda">×</button>
+      </div>
+      <dl class="flag-help-list">
+        <div class="flag-help-item"><dt>C</dt><dd><strong>Acarreo (Carry).</strong> Se activa si una suma genera un noveno bit. En este simulador también señala préstamo cuando A es menor que B en una resta.</dd></div>
+        <div class="flag-help-item"><dt>Z</dt><dd><strong>Cero (Zero).</strong> Se activa cuando los ocho bits del resultado son 0.</dd></div>
+        <div class="flag-help-item"><dt>N</dt><dd><strong>Negativo (Negative).</strong> Copia el bit más significativo. En complemento a 2, un 1 indica un resultado negativo.</dd></div>
+        <div class="flag-help-item"><dt>V</dt><dd><strong>Desbordamiento (Overflow).</strong> Se activa cuando el resultado matemático con signo queda fuera del intervalo −128…127.</dd></div>
+      </dl>
+    </div>
+  </dialog>
+
   <script>
     'use strict';
 
@@ -287,7 +379,8 @@
       resultDecimal: $('resultDecimal'), resultBinary: $('resultBinary'),
       equation: $('equation'), explanation: $('explanation'),
       inputBCard: $('inputBCard'), bitwise: $('bitwise'),
-      bitBoard: $('bitBoard'), bitDetails: $('bitDetails'), useCase: $('useCase')
+      bitBoard: $('bitBoard'), bitDetails: $('bitDetails'), useCase: $('useCase'),
+      flagsHelp: $('flagsHelp'), flagsModal: $('flagsModal'), closeFlagsModal: $('closeFlagsModal')
     };
 
     const toByte = value => ((value % 256) + 256) % 256;
@@ -343,7 +436,7 @@
       const ignoresB = els.operation.value === 'not';
       els.decimalB.disabled = ignoresB;
       els.inputBCard.classList.toggle('inactive', ignoresB);
-      els.inputBCard.querySelector('.help').textContent = ignoresB ? 'Este operando no interviene en NOT' : 'Operando de 8 bits';
+      els.inputBCard.querySelector('.help').textContent = ignoresB ? 'El acumulador no interviene en NOT' : 'Acumulador · operando de 8 bits';
     }
 
     function calculate() {
@@ -407,6 +500,11 @@
     els.decimalB.addEventListener('input', () => updateBinaryPreview(els.decimalB, els.binaryB));
     els.operation.addEventListener('change', () => { updateOperationState(); calculate(); });
     els.calculate.addEventListener('click', calculate);
+    els.flagsHelp.addEventListener('click', () => els.flagsModal.showModal());
+    els.closeFlagsModal.addEventListener('click', () => els.flagsModal.close());
+    els.flagsModal.addEventListener('click', event => {
+      if (event.target === els.flagsModal) els.flagsModal.close();
+    });
     document.querySelectorAll('.example').forEach(button => button.addEventListener('click', () => {
       const examples = {
         and: [0b10110110, 0b11110000],

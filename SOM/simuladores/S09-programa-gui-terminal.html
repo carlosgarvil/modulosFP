@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Compara un programa con interfaz gráfica, su uso desde una terminal y su código fuente en Python.">
+  <title>Un programa, tres vistas - SOM</title>
+  <style>
+    :root{--ink:#162033;--muted:#61708a;--line:#d9e2ef;--blue:#2563eb;--blue2:#60a5fa;--bg:#eef3f9;--panel:#fff;--term:#10151d;--green:#72e2a7;--yellow:#ffd166}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;color:var(--ink);background:radial-gradient(circle at 85% 5%,#dbeafe 0,transparent 26rem),var(--bg);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .home-link{position:fixed;top:1rem;left:1rem;z-index:20;padding:.5rem .75rem;border:1px solid #b8c7da;border-radius:9px;background:#fffffff2;color:#172238;text-decoration:none;font-weight:650;box-shadow:0 4px 14px #1722381f;backdrop-filter:blur(6px)}
+    .home-link:focus-visible,.primary:focus-visible,input:focus-visible,.terminal-input:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+    header{padding:3.3rem 1.25rem 2.2rem;text-align:center;background:#0f1b2d;color:#fff}
+    .eyebrow{color:#93c5fd;font-size:.78rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+    h1{margin:.35rem 0 .5rem;font-size:clamp(2rem,5vw,3.35rem);line-height:1.08}
+    header p{max-width:700px;margin:auto;color:#c8d4e5;font-size:1.04rem}
+    main{width:min(1120px,calc(100% - 2rem));margin:2rem auto 4rem}
+    .intro{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;padding:1rem 1.2rem;border:1px solid #bfdbfe;border-radius:14px;background:#eff6ff}
+    .intro p{margin:0}.flow{white-space:nowrap;color:#1d4ed8;font-weight:750}
+    .section-label{display:flex;align-items:center;gap:.7rem;margin:2.1rem 0 .8rem}
+    .step{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800}
+    h2{margin:0;font-size:1.25rem}.section-label p{margin:0 0 0 auto;color:var(--muted);font-size:.9rem}
+    .window{overflow:hidden;border:1px solid #aab8ca;border-radius:12px;background:#fff;box-shadow:0 22px 55px #17223828}
+    .titlebar{display:flex;align-items:center;height:43px;padding-left:14px;background:#f4f6f9;border-bottom:1px solid #d5dbe4;user-select:none}
+    .app-icon{display:grid;place-items:center;width:22px;height:22px;margin-right:9px;border-radius:5px;background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;font-weight:800;font-size:.75rem}
+    .titlebar-title{font-size:.86rem;font-weight:600}.window-actions{display:flex;height:100%;margin-left:auto}.window-actions span{display:grid;place-items:center;width:46px;color:#334155}.window-actions span:last-child:hover{background:#e81123;color:#fff}
+    .menubar{padding:5px 13px;border-bottom:1px solid #e5e7eb;font-size:.8rem;color:#475569;word-spacing:15px}
+    .desktop{min-height:330px;padding:42px 24px;background:linear-gradient(145deg,#f8fbff,#eaf1fa)}
+    .app-body{width:min(520px,100%);margin:auto}.app-body h3{margin:0;text-align:center;font-size:1.45rem}.app-body>p{text-align:center;margin:.35rem 0 1.5rem;color:var(--muted)}
+    .form-row{display:grid;grid-template-columns:1fr auto 1fr auto;gap:12px;align-items:end}.field label{display:block;margin-bottom:5px;color:#475569;font-size:.82rem;font-weight:650}.field input{width:100%;padding:.72rem;border:1px solid #aebbc9;border-radius:7px;background:#fff;color:#0f172a}.plus{padding-bottom:.68rem;font-size:1.35rem;color:#64748b}
+    .primary{border:0;border-radius:7px;background:#0b62d6;color:#fff;padding:.75rem 1.15rem;font-weight:700;box-shadow:0 3px 8px #2563eb35}.primary:hover{background:#0958c1}.primary:active{transform:translateY(1px)}
+    .result{display:flex;align-items:center;justify-content:center;gap:.75rem;min-height:64px;margin-top:1.4rem;border:1px solid #cbd5e1;border-radius:9px;background:#fff}.result strong{font-size:1.7rem;color:#0b62d6}.result.pop strong{animation:pop .28s ease}@keyframes pop{50%{transform:scale(1.2)}}
+    .terminal{overflow:hidden;border:1px solid #293545;border-radius:12px;background:var(--term);box-shadow:0 20px 45px #10182738;color:#d7e0eb;font:15px/1.65 Consolas,"Cascadia Code",monospace}
+    .terminal-bar{display:flex;align-items:center;gap:9px;padding:10px 13px;background:#1a2230;border-bottom:1px solid #2b3748;font:13px "Segoe UI",sans-serif}.terminal-icon{color:#c4b5fd}.terminal-status{margin-left:auto;color:#94a3b8;font-size:.75rem}
+    .terminal-screen{height:250px;padding:16px 18px;overflow-y:auto}.line{white-space:pre-wrap}.prompt{color:var(--green)}.command{color:#f8fafc}.output{color:var(--yellow)}.dim{color:#8190a5}
+    .command-row{display:flex}.command-row label{color:var(--green);white-space:nowrap}.terminal-input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#fff;font:inherit;caret-color:#fff}
+    .hint{margin:.65rem 0 0;color:var(--muted);font-size:.85rem}
+    .code-card{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr);overflow:hidden;border:1px solid #263246;border-radius:12px;background:#111827;box-shadow:0 20px 45px #1018272b}
+    .code-head{grid-column:1/-1;display:flex;align-items:center;padding:10px 15px;background:#1e293b;color:#e2e8f0;font-size:.85rem}.code-head span:first-child{color:#60a5fa;font-weight:700}.run-code{margin-left:auto;border:1px solid #475569;border-radius:6px;background:#263449;color:#fff;padding:.35rem .65rem}.run-code:hover{background:#334155}
+    pre{margin:0;padding:20px;overflow:auto;color:#e5e7eb;font:14px/1.75 Consolas,"Cascadia Code",monospace}.code-line{display:block;margin:0 -20px;padding:0 20px;border-left:3px solid transparent}.code-line.active{background:#263449;border-left-color:#60a5fa}.kw{color:#c084fc}.fn{color:#67e8f9}.str{color:#86efac}.num{color:#fbbf24}.comment{color:#7f8ea3}
+    .trace{padding:18px;border-left:1px solid #334155;background:#182235;color:#d6deea}.trace h3{margin:0 0 1rem;font-size:.95rem}.trace-item{display:flex;gap:.7rem;margin:.8rem 0;color:#91a0b5;font-size:.86rem}.trace-dot{flex:0 0 13px;height:13px;margin-top:4px;border:2px solid #64748b;border-radius:50%}.trace-item.active{color:#fff}.trace-item.active .trace-dot{border-color:#60a5fa;background:#60a5fa;box-shadow:0 0 0 5px #60a5fa25}.trace-value{display:block;color:#93c5fd;font-family:Consolas,monospace}
+    .compare{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.compare article{padding:1rem;border:1px solid var(--line);border-radius:12px;background:#fff}.compare h3{margin:0 0 .4rem;font-size:1rem}.compare p{margin:0;color:var(--muted);font-size:.9rem}.tag{display:inline-block;margin-top:.75rem;padding:.22rem .5rem;border-radius:99px;background:#eaf2ff;color:#1d4ed8;font-size:.72rem;font-weight:750}
+    .takeaway{margin-top:1rem;padding:1rem 1.2rem;border-left:5px solid var(--blue);border-radius:9px;background:#fff;box-shadow:0 6px 18px #1722380d}.takeaway strong{color:#1d4ed8}
+    .history-section{margin-top:3rem;padding-top:2.4rem;border-top:1px solid #cbd5e1}.history-kicker{color:#a16207;font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.history-section>h2{margin:.25rem 0 .5rem;font-size:clamp(1.55rem,3vw,2.1rem)}.history-lead{max-width:790px;margin:.2rem 0 1.4rem;color:var(--muted)}
+    .card-explainer{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:18px;align-items:start}.punch-wrap{overflow-x:auto;padding:18px;border-radius:14px;background:#1e293b;box-shadow:0 18px 38px #1722382b}.punch-card{min-width:700px;padding:22px 26px 20px;border-radius:10px;background:#e6c88a;color:#59431b;box-shadow:inset 0 0 0 1px #b48a43,inset 0 0 24px #8b642930;transform:rotate(-.25deg)}
+    .card-brand{display:flex;justify-content:space-between;margin-bottom:9px;font:700 10px/1.2 "Courier New",monospace;letter-spacing:.12em;text-transform:uppercase}.punch-grid{display:grid;grid-template-columns:28px repeat(8,1fr);font:700 10px/1 "Courier New",monospace}.punch-grid>*{display:grid;place-items:center;height:20px}.corner{border-right:1px solid #bd984f;border-bottom:1px solid #bd984f}.column-char{border-bottom:1px solid #bd984f;color:#35270e;font-size:12px}.row-label{border-right:1px solid #bd984f;color:#755718}.punch-cell{position:relative}.punch-cell::after{content:"";width:8px;height:13px;border:1px solid #c29c55;border-radius:1px;opacity:.32}.punch-cell.hole::after{border-color:#1e293b;background:#1e293b;opacity:1;box-shadow:inset 0 0 0 1px #101827,1px 1px 0 #f8e3b5}.card-columns{display:grid;grid-template-columns:28px repeat(8,1fr);margin-top:5px;font:9px "Courier New",monospace;text-align:center;color:#88682e}.encoding-note{margin:10px 0 0;text-align:center;font:10px "Courier New",monospace;color:#6f521f}
+    .encoding-panel{padding:1.15rem;border:1px solid var(--line);border-radius:14px;background:#fff}.encoding-panel h3{margin:0 0 .7rem;font-size:1.05rem}.encoding-panel p{margin:.55rem 0;color:var(--muted);font-size:.9rem}.encoding-list{margin:.9rem 0 0;padding:0;list-style:none}.encoding-list li{display:grid;grid-template-columns:38px 1fr;gap:.65rem;margin:.65rem 0;font-size:.87rem}.encoding-symbol{display:grid;place-items:center;height:30px;border-radius:6px;background:#fff4cf;color:#744f08;font-family:Consolas,monospace;font-weight:800}.encoding-panel code{color:#334155}
+    .activity{display:grid;grid-template-columns:1fr auto;gap:1.2rem;align-items:center;margin-top:18px;padding:1.25rem 1.35rem;border:1px solid #f1cf78;border-radius:14px;background:#fffaf0}.activity h3{margin:0 0 .35rem}.activity p{margin:.25rem 0;color:#655434}.activity ol{margin:.8rem 0 0;padding-left:1.3rem;color:#655434;font-size:.9rem}.activity li{margin:.32rem 0}.deck{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:1rem 0}.deck-group{padding:.75rem;border:1px solid #e6c56f;border-radius:9px;background:#fffdf7}.deck-title{display:block;margin-bottom:.5rem;color:#7c580c;font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.mini-card{display:flex;align-items:center;gap:.55rem;margin:5px 0;padding:.42rem .55rem;border:1px solid #d9b965;border-radius:5px;background:#ecd296;color:#3f3015;font:700 12px/1.2 Consolas,monospace;box-shadow:2px 2px 0 #c59b46}.mini-card::before{content:attr(data-card);display:grid;place-items:center;flex:0 0 21px;height:21px;border-radius:50%;background:#79580f;color:#fff;font:700 10px system-ui}.mini-card.data{background:#dbe8f0;border-color:#9ab5c7;box-shadow:2px 2px 0 #7e9caf}.mini-card.data::before{background:#3e647c}.deck-note{margin:.55rem 0 0!important;font-size:.8rem!important}.external-link{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-width:190px;padding:.8rem 1rem;border-radius:8px;background:#8a5a08;color:#fff;text-decoration:none;font-weight:750;box-shadow:0 4px 12px #8a5a0830}.external-link:hover{background:#704806}.scope-note{margin-top:12px;padding:.8rem 1rem;border-radius:9px;background:#e8eef6;color:#48566b;font-size:.87rem}.scope-note strong{color:#243147}
+    .next-lab{margin-top:2.4rem;padding:1.5rem;border-radius:16px;background:linear-gradient(135deg,#101b2e,#1b3155);color:#e8eef8;box-shadow:0 22px 48px #1722382b}.next-lab-head{display:flex;align-items:flex-start;gap:1rem}.next-number{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:10px;background:#60a5fa;color:#0f1b2d;font-size:1.15rem;font-weight:900}.next-lab h2{margin:0 0 .3rem;color:#fff}.next-lab-head p{margin:0;color:#b9c8dc}.machine-task{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:1.25rem 0}.machine-card{padding:1rem;border:1px solid #405574;border-radius:10px;background:#0b1423aa}.machine-card h3{margin:0 0 .65rem;color:#93c5fd;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase}.machine-program{margin:0;padding:0;list-style:none;font:14px/1.7 Consolas,monospace}.machine-program li{display:flex;gap:.65rem}.machine-address{width:2.3rem;color:#7086a5}.memory-map{display:grid;grid-template-columns:auto 1fr;gap:.45rem .8rem;margin:0;font-size:.9rem}.memory-map dt{color:#93c5fd;font:700 14px Consolas,monospace}.memory-map dd{margin:0;color:#d0dae8}.next-actions{display:flex;align-items:center;justify-content:space-between;gap:1rem}.next-tip{margin:0;color:#aebed2;font-size:.85rem}.lab-link{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;flex:0 0 auto;padding:.8rem 1.05rem;border-radius:8px;background:#60a5fa;color:#10203a;text-decoration:none;font-weight:800}.lab-link:hover{background:#93c5fd}
+    @media(max-width:760px){.home-link{position:static;display:inline-block;margin:12px 0 0 12px}header{padding-top:1.8rem}.intro{align-items:flex-start;flex-direction:column}.flow{white-space:normal}.section-label{align-items:flex-start}.section-label p{display:none}.form-row{grid-template-columns:1fr auto 1fr}.form-row button{grid-column:1/-1}.code-card{grid-template-columns:1fr}.trace{border-left:0;border-top:1px solid #334155}.compare,.card-explainer{grid-template-columns:1fr}.activity,.deck,.machine-task{grid-template-columns:1fr}.external-link{width:100%}.next-actions{align-items:stretch;flex-direction:column}.lab-link{width:100%}.desktop{padding:30px 14px}}
+  </style>
+</head>
+<body>
+  <a class="home-link" href="../../index.html">← Simuladores</a>
+  <header>
+    <div class="eyebrow">De la interfaz al código</div>
+    <h1>Un programa, tres vistas</h1>
+    <p>El mismo programa suma dos números. Lo que cambia es la forma de comunicarnos con él: ventana, terminal o código fuente.</p>
+  </header>
+  <main>
+    <div class="intro">
+      <p><strong>Prueba primero la ventana.</strong> Los valores se copiarán en los ejemplos inferiores para poder seguir su recorrido.</p>
+      <div class="flow">entrada → proceso → salida</div>
+    </div>
+
+    <div class="section-label"><span class="step">1</span><h2>Como programa de escritorio</h2><p>Interfaz gráfica (GUI)</p></div>
+    <section class="window" aria-label="Aplicación de escritorio para sumar">
+      <div class="titlebar"><span class="app-icon">+</span><span class="titlebar-title">Suma fácil</span><div class="window-actions" aria-hidden="true"><span>—</span><span>□</span><span>×</span></div></div>
+      <div class="menubar">Archivo Ayuda</div>
+      <div class="desktop">
+        <div class="app-body">
+          <h3>Sumar dos números</h3><p>Escribe los números y pulsa el botón.</p>
+          <div class="form-row">
+            <div class="field"><label for="numberA">Primer número</label><input id="numberA" type="number" step="any" value="4"></div>
+            <div class="plus" aria-hidden="true">+</div>
+            <div class="field"><label for="numberB">Segundo número</label><input id="numberB" type="number" step="any" value="3"></div>
+            <button class="primary" id="guiSum" type="button">Sumar</button>
+          </div>
+          <div class="result" id="guiResult" aria-live="polite"><span>Resultado</span><strong id="resultValue">7</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-label"><span class="step">2</span><h2>Como programa de terminal</h2><p>Interfaz de línea de comandos (CLI)</p></div>
+    <section class="terminal" aria-label="Terminal interactiva">
+      <div class="terminal-bar"><span class="terminal-icon">❯_</span><span>Terminal — bash</span><span class="terminal-status">sesión local</span></div>
+      <div class="terminal-screen" id="terminalScreen">
+        <div class="line dim">Programa suma preparado. Escribe «suma número número».</div>
+        <div class="line"><span class="prompt">alumno@pc:~$ </span><span class="command">suma 4 3</span></div>
+        <div class="line output">7</div>
+        <div class="command-row"><label for="terminalInput">alumno@pc:~$&nbsp;</label><input id="terminalInput" class="terminal-input" autocomplete="off" spellcheck="false" aria-label="Escribe un comando"></div>
+      </div>
+    </section>
+    <p class="hint">Prueba <code>suma 10 5</code>. También puedes escribir <code>ayuda</code> o <code>limpiar</code> y pulsar Intro.</p>
+
+    <div class="section-label"><span class="step">3</span><h2>El código que hay detrás</h2><p>Lenguaje Python</p></div>
+    <section class="code-card">
+      <div class="code-head"><span>🐍 suma.py</span><button class="run-code" id="runCode" type="button">▶ Ejecutar paso a paso</button></div>
+      <pre aria-label="Código Python"><code><span class="code-line" data-line="0"><span class="kw">import</span> sys</span><span class="code-line" data-line="1"></span><span class="code-line" data-line="2"><span class="comment"># Recoge dos datos de la terminal</span></span><span class="code-line" data-line="3">a = <span class="fn">float</span>(sys.argv[<span class="num">1</span>])</span><span class="code-line" data-line="4">b = <span class="fn">float</span>(sys.argv[<span class="num">2</span>])</span><span class="code-line" data-line="5"></span><span class="code-line" data-line="6"><span class="comment"># Procesa los datos</span></span><span class="code-line" data-line="7">resultado = a + b</span><span class="code-line" data-line="8"></span><span class="code-line" data-line="9"><span class="comment"># Muestra la salida</span></span><span class="code-line" data-line="10"><span class="fn">print</span>(resultado)</span></code></pre>
+      <aside class="trace">
+        <h3>Qué hace el ordenador</h3>
+        <div class="trace-item" data-trace="0"><span class="trace-dot"></span><div>Lee el primer argumento<span class="trace-value">a = <b id="traceA">4</b></span></div></div>
+        <div class="trace-item" data-trace="1"><span class="trace-dot"></span><div>Lee el segundo argumento<span class="trace-value">b = <b id="traceB">3</b></span></div></div>
+        <div class="trace-item" data-trace="2"><span class="trace-dot"></span><div>Realiza la operación<span class="trace-value">a + b = <b id="traceOperation">7</b></span></div></div>
+        <div class="trace-item" data-trace="3"><span class="trace-dot"></span><div>Muestra el resultado<span class="trace-value">salida: <b id="traceResult">7</b></span></div></div>
+      </aside>
+    </section>
+
+    <div class="section-label"><span class="step">✓</span><h2>¿Cuál es la diferencia?</h2></div>
+    <section class="compare">
+      <article><h3>🪟 Ventana</h3><p>La persona introduce datos mediante controles visuales: campos y botones. Es fácil de descubrir y usar.</p><span class="tag">GUI</span></article>
+      <article><h3>❯_ Terminal</h3><p>La persona escribe una orden y sus argumentos. Es rápida, precisa y fácil de automatizar.</p><span class="tag">CLI</span></article>
+      <article><h3>🐍 Código fuente</h3><p>El programador define las instrucciones. Un intérprete de Python las traduce durante la ejecución.</p><span class="tag">LÓGICA</span></article>
+    </section>
+    <div class="takeaway"><strong>Idea clave:</strong> no son tres cálculos distintos. Los tres reciben <em>entradas</em>, ejecutan la misma <em>suma</em> y producen una <em>salida</em>. La interfaz es la capa que cambia.</div>
+
+    <section class="history-section" aria-labelledby="punch-title">
+      <div class="history-kicker">Una equivalencia histórica</div>
+      <h2 id="punch-title">Cuando el programa era una baraja de tarjetas</h2>
+      <p class="history-lead">Antes de escribir programas en una pantalla, era habitual perforarlos en tarjetas. Una tarjeta representaba normalmente una línea y sus 80 columnas guardaban caracteres: letras, números, espacios y símbolos.</p>
+
+      <div class="card-explainer">
+        <div class="punch-wrap" aria-label="Ejemplo de tarjeta perforada que codifica SUMA 4 3">
+          <div class="punch-card">
+            <div class="card-brand"><span>Tarjeta de programa · ejemplo</span><span>8 de 80 columnas</span></div>
+            <div class="punch-grid" id="punchGrid"></div>
+            <div class="card-columns"><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+            <div class="encoding-note">SUMA␠4␠3 — cada columna vertical codifica un carácter</div>
+          </div>
+        </div>
+        <aside class="encoding-panel">
+          <h3>¿Cómo se lee esta tarjeta?</h3>
+          <p>Las filas se llaman <strong>12, 11, 0, 1…9</strong>. La posición o combinación de agujeros de una columna identifica un carácter.</p>
+          <ul class="encoding-list">
+            <li><span class="encoding-symbol">4</span><span>Los números usan una perforación: el <strong>4</strong> perfora la fila 4.</span></li>
+            <li><span class="encoding-symbol">A</span><span>Muchas letras combinan una zona y un número: <strong>A = filas 12 + 1</strong>.</span></li>
+            <li><span class="encoding-symbol">S</span><span>Otra zona produce otras letras: <strong>S = filas 0 + 2</strong>.</span></li>
+            <li><span class="encoding-symbol">␠</span><span>Un espacio se representa dejando la columna sin perforar.</span></li>
+          </ul>
+          <p>Por eso <code>SUMA 4 3</code> ocupa ocho columnas, aunque algunas tengan uno, dos o ningún agujero.</p>
+        </aside>
+      </div>
+
+      <div class="activity">
+        <div>
+          <h3>Actividad: construye una pequeña baraja de programa</h3>
+          <p>En los sistemas con tarjetas, un programa podía ocupar muchas tarjetas: normalmente una línea de código por tarjeta. Crea esta versión didáctica, inspirada en el FORTRAN de formato fijo:</p>
+          <div class="deck" aria-label="Baraja de seis tarjetas de programa y dos tarjetas de datos">
+            <div class="deck-group">
+              <span class="deck-title">Programa · 6 tarjetas</span>
+              <div class="mini-card" data-card="1">READ *, A</div>
+              <div class="mini-card" data-card="2">READ *, B</div>
+              <div class="mini-card" data-card="3">SUM = A + B</div>
+              <div class="mini-card" data-card="4">PRINT *, SUM</div>
+              <div class="mini-card" data-card="5">STOP</div>
+              <div class="mini-card" data-card="6">END</div>
+            </div>
+            <div class="deck-group">
+              <span class="deck-title">Datos · 2 tarjetas</span>
+              <div class="mini-card data" data-card="A">4</div>
+              <div class="mini-card data" data-card="B">3</div>
+              <p class="deck-note">Estas tarjetas proporcionan, por separado, los valores de <code>A</code> y <code>B</code>; no son instrucciones del programa.</p>
+            </div>
+          </div>
+          <ol>
+            <li>Selecciona <strong>FORTRAN Statement</strong> para las seis tarjetas del programa.</li>
+            <li>En cada tarjeta nueva, pulsa dos veces <strong>Tab</strong> para llegar al campo de instrucciones, escribe una línea y pulsa <strong>Enter</strong>.</li>
+            <li>Crea después dos tarjetas de tipo <strong>DATA</strong>: una con <code>4</code> y otra con <code>3</code>.</li>
+            <li>Compara las apariciones de <code>A</code>, <code>B</code> y <code>SUM</code>: el mismo carácter debe producir siempre el mismo patrón de agujeros.</li>
+            <li>Coloca las tarjetas de programa en orden y mantén las tarjetas de datos separadas. Haz una captura de las ocho.</li>
+          </ol>
+        </div>
+        <a class="external-link" href="https://www.masswerk.at/keypunch/" target="_blank" rel="noopener noreferrer">Abrir perforadora ↗</a>
+      </div>
+      <div class="scope-note"><strong>De momento, solo codificamos.</strong> La tarjeta almacena caracteres mediante agujeros. En esta actividad basta con distinguir tarjetas de programa y de datos; cómo se leían y ejecutaban se estudiará más adelante.</div>
+    </section>
+
+    <section class="next-lab" aria-labelledby="machine-title">
+      <div class="next-lab-head">
+        <span class="next-number">5</span>
+        <div><h2 id="machine-title">Reto final: lleva la suma a una máquina elemental</h2><p>Ahora representa el mismo cálculo con instrucciones y datos almacenados directamente en memoria.</p></div>
+      </div>
+      <div class="machine-task">
+        <div class="machine-card">
+          <h3>Programa que debes cargar</h3>
+          <ol class="machine-program">
+            <li><span class="machine-address">00</span><span>LOAD 20</span></li>
+            <li><span class="machine-address">02</span><span>ADD 21</span></li>
+            <li><span class="machine-address">04</span><span>STORE 22</span></li>
+            <li><span class="machine-address">06</span><span>OUTN 22</span></li>
+            <li><span class="machine-address">08</span><span>HALT</span></li>
+          </ol>
+        </div>
+        <div class="machine-card">
+          <h3>Datos reservados en memoria</h3>
+          <dl class="memory-map">
+            <dt>20</dt><dd>Primer sumando: <strong>04</strong></dd>
+            <dt>21</dt><dd>Segundo sumando: <strong>03</strong></dd>
+            <dt>22</dt><dd>Resultado: empieza en <strong>00</strong></dd>
+          </dl>
+        </div>
+      </div>
+      <div class="next-actions">
+        <p class="next-tip">Las direcciones y valores están en hexadecimal. Consulta las tarjetas de instrucciones del simulador para averiguar el código de cada operación y carga cada byte con los interruptores.</p>
+        <a class="lab-link" href="S01-computador-primitivo.html">Abrir computador primitivo →</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    const $=s=>document.querySelector(s);
+    const clean=n=>Number.isInteger(n)?String(n):String(Number(n.toFixed(8)));
+    const values=()=>{const a=Number($('#numberA').value),b=Number($('#numberB').value);return {a,b,result:a+b,valid:Number.isFinite(a)&&Number.isFinite(b)}};
+    function updateShared(showAnimation=false){
+      const v=values();
+      if(!v.valid){$('#resultValue').textContent='—';return;}
+      $('#resultValue').textContent=clean(v.result);$('#traceA').textContent=clean(v.a);$('#traceB').textContent=clean(v.b);$('#traceOperation').textContent=clean(v.result);$('#traceResult').textContent=clean(v.result);
+      if(showAnimation){const box=$('#guiResult');box.classList.remove('pop');void box.offsetWidth;box.classList.add('pop');}
+    }
+    $('#guiSum').addEventListener('click',()=>updateShared(true));
+    ['#numberA','#numberB'].forEach(id=>$(id).addEventListener('input',()=>updateShared(false)));
+    ['#numberA','#numberB'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')updateShared(true)}));
+
+    const input=$('#terminalInput'),screen=$('#terminalScreen');
+    function terminalLine(html,className='line'){const div=document.createElement('div');div.className=className;div.innerHTML=html;screen.insertBefore(div,screen.lastElementChild);screen.scrollTop=screen.scrollHeight;}
+    input.addEventListener('keydown',e=>{
+      if(e.key!=='Enter')return;
+      const raw=input.value.trim();input.value='';
+      terminalLine('<span class="prompt">alumno@pc:~$ </span><span class="command"></span>');screen.children[screen.children.length-2].querySelector('.command').textContent=raw;
+      const parts=raw.split(/\s+/);const cmd=(parts[0]||'').toLowerCase();
+      if(!raw) return;
+      if(cmd==='limpiar'||cmd==='clear'){[...screen.children].slice(0,-1).forEach(el=>el.remove());return;}
+      if(cmd==='ayuda'||cmd==='help'){terminalLine('Uso: suma &lt;número1&gt; &lt;número2&gt;','line dim');return;}
+      if(cmd==='suma'&&parts.length===3&&Number.isFinite(Number(parts[1]))&&Number.isFinite(Number(parts[2]))){const a=Number(parts[1]),b=Number(parts[2]);terminalLine(clean(a+b),'line output');$('#numberA').value=a;$('#numberB').value=b;updateShared(true);return;}
+      terminalLine('Error: usa el formato «suma 4 3».','line output');
+    });
+    screen.addEventListener('click',()=>input.focus());
+
+    let running=false;
+    const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    $('#runCode').addEventListener('click',async()=>{
+      if(running)return;running=true;updateShared(false);$('#runCode').textContent='Ejecutando…';
+      const stages=[{lines:[3],trace:0},{lines:[4],trace:1},{lines:[7],trace:2},{lines:[10],trace:3}];
+      document.querySelectorAll('.active').forEach(el=>el.classList.remove('active'));
+      for(const stage of stages){stage.lines.forEach(n=>document.querySelector(`[data-line="${n}"]`).classList.add('active'));document.querySelector(`[data-trace="${stage.trace}"]`).classList.add('active');await wait(700);stage.lines.forEach(n=>document.querySelector(`[data-line="${n}"]`).classList.remove('active'));}
+      $('#runCode').textContent='↻ Ejecutar otra vez';running=false;
+    });
+    const punchText='SUMA 4 3';
+    const punchRows=['12','11','0','1','2','3','4','5','6','7','8','9'];
+    const punchCode={S:['0','2'],U:['0','4'],M:['11','4'],A:['12','1'],' ':[],4:['4'],3:['3']};
+    const punchGrid=$('#punchGrid');
+    punchGrid.insertAdjacentHTML('beforeend','<span class="corner">fila</span>'+[...punchText].map(char=>`<span class="column-char">${char===' '?'␠':char}</span>`).join(''));
+    punchRows.forEach(row=>punchGrid.insertAdjacentHTML('beforeend',`<span class="row-label">${row}</span>`+[...punchText].map(char=>`<span class="punch-cell ${(punchCode[char]||[]).includes(row)?'hole':''}" aria-label="${(punchCode[char]||[]).includes(row)?`Perforación en fila ${row}`:`Sin perforar en fila ${row}`}"></span>`).join('')));
+    updateShared();
+  </script>
+</body>
+</html>

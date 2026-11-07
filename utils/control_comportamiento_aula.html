@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control de comportamiento del aula</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #17212b; background: #fff; color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; max-width: 360px; padding: 6px; background: #fff; }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .mode { width: 100%; min-height: 38px; border: 0; border-radius: 6px; font-weight: 800; color: white; }
+    .mode.quiet { background: #9b1c1c; }
+    .mode.talk { background: #176b42; }
+    .toolbar { display: flex; gap: 5px; margin: 5px 0; }
+    .toolbar button { flex: 1; min-height: 30px; border: 1px solid #b8c1cc; border-radius: 5px; background: white; font-size: 12px; }
+    .editor { display: none; margin-bottom: 5px; }
+    .editor.open { display: block; }
+    textarea { display: block; width: 100%; min-height: 100px; resize: vertical; border: 1px solid #aab5c2; border-radius: 5px; padding: 5px; font-size: 14px; }
+    .editor button { margin-top: 4px; padding: 5px 10px; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 28px; align-items: center; gap: 4px; min-height: 29px; padding: 1px 3px; border-bottom: 1px solid #d9dfe6; cursor: pointer; }
+    .row:focus-visible { outline: 2px solid #176b42; outline-offset: -2px; }
+    .name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 650; }
+    .battery { display: flex; gap: 2px; align-items: center; width: 92px; height: 25px; padding: 3px; border: 2px solid #465565; border-radius: 4px; background: white; }
+    .segment { flex: 1; height: 100%; border-radius: 1px; background: #dce2e8; }
+    .battery[data-level="1"] .segment:nth-child(-n+1) { background: #238a4b; }
+    .battery[data-level="2"] .segment:nth-child(-n+2) { background: #d7a900; }
+    .battery[data-level="3"] .segment:nth-child(-n+3) { background: #df741c; }
+    .battery[data-level="4"] { border-color: #aa1515; background: #aa1515; }
+    .battery[data-level="4"] .segment { background: #ff6b6b; }
+    .back { border: 0; background: transparent; font-size: 19px; line-height: 1; padding: 0; }
+    .row.level4 { background: #fff0f0; }
+    .empty { margin: 10px 3px; font-size: 13px; color: #596575; }
+  </style>
+</head>
+<body>
+  <button id="mode" class="mode quiet" type="button"></button>
+  <div class="toolbar">
+    <button id="edit" type="button" aria-expanded="false">✏️ Alumnos</button>
+    <button id="reset" type="button">Reiniciar clase</button>
+  </div>
+  <div id="editor" class="editor">
+    <label for="names">Un alumno por línea</label>
+    <textarea id="names" placeholder="Ana García&#10;Luis Pérez"></textarea>
+    <button id="load" type="button">Cargar alumnos</button>
+  </div>
+  <main id="list" aria-live="polite"></main>
+  <script>
+    (() => {
+      'use strict';
+      const KEY = 'control_comportamiento_aula_v2';
+      const $ = id => document.getElementById(id);
+      let state = { quiet: true, students: [] };
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(KEY));
+        if (saved && Array.isArray(saved.students)) {
+          state.quiet = saved.quiet !== false;
+          state.students = saved.students.filter(s => s && typeof s.name === 'string').map(s => ({
+            name: s.name, level: Math.min(4, Math.max(1, Number(s.level) || 1))
+          }));
+        }
+      } catch (_) { /* Start fresh if session data is unavailable. */ }
+      const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} };
+      function render() {
+        const mode = $('mode');
+        mode.textContent = state.quiet ? '🔇 SILENCIO ABSOLUTO' : '🗣️ CONVERSACIÓN MODERADA';
+        mode.className = 'mode ' + (state.quiet ? 'quiet' : 'talk');
+        mode.setAttribute('aria-pressed', String(!state.quiet));
+        const list = $('list');
+        list.replaceChildren();
+        if (!state.students.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Pulsa «Alumnos» para pegar la lista.';
+          list.append(empty);
+        }
+        state.students.forEach((student, index) => {
+          const row = document.createElement('div');
+          row.className = 'row' + (student.level === 4 ? ' level4' : '');
+          row.tabIndex = 0;
+          row.setAttribute('role', 'button');
+          row.setAttribute('aria-label', `${student.name}: nivel ${student.level} de 4. Pulsar para subir`);
+          row.addEventListener('click', () => changeLevel(index, 1));
+          row.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); changeLevel(index, 1); }
+          });
+          const name = document.createElement('span');
+          name.className = 'name'; name.textContent = student.name; name.title = student.name;
+          const battery = document.createElement('span');
+          battery.className = 'battery';
+          battery.dataset.level = student.level;
+          battery.setAttribute('aria-hidden', 'true');
+          for (let i = 0; i < 4; i++) { const segment = document.createElement('span'); segment.className = 'segment'; battery.append(segment); }
+          const back = document.createElement('button');
+          back.type = 'button'; back.className = 'back'; back.textContent = '↩️';
+          back.setAttribute('aria-label', `${student.name}: retroceder un nivel`);
+          back.addEventListener('click', event => { event.stopPropagation(); changeLevel(index, -1); });
+          back.addEventListener('keydown', event => { event.stopPropagation(); });
+          row.append(name, battery, back); list.append(row);
+        });
+      }
+      function changeLevel(index, amount) {
+        state.students[index].level = Math.min(4, Math.max(1, state.students[index].level + amount));
+        save(); render();
+      }
+      $('mode').addEventListener('click', () => { state.quiet = !state.quiet; save(); render(); });
+      $('edit').addEventListener('click', () => {
+        const open = $('editor').classList.toggle('open');
+        $('edit').setAttribute('aria-expanded', String(open));
+        if (open) { $('names').value = state.students.map(s => s.name).join('\n'); $('names').focus(); }
+      });
+      $('load').addEventListener('click', () => {
+        const oldLevels = new Map(state.students.map(s => [s.name, s.level]));
+        state.students = $('names').value.split(/\r?\n/).map(n => n.trim()).filter(Boolean)
+          .map(name => ({ name, level: oldLevels.get(name) || 1 }));
+        save(); render(); $('editor').classList.remove('open'); $('edit').setAttribute('aria-expanded', 'false');
+      });
+      $('reset').addEventListener('click', () => {
+        state.students.forEach(student => { student.level = 1; });
+        save(); render();
+      });
+      render();
+    })();
+  </script>
+</body>
+</html>

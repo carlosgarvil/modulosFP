@@ -6,8 +6,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Simuladores educativos de Sistemas Operativos Monopuesto.">
-  <title>Simuladores de Sistemas Operativos</title>
+  <meta name="description" content="Recursos interactivos de formación profesional: simuladores de SOM y herramientas de aula.">
+  <title>Recursos de FP</title>
   <style>
     :root {
       color-scheme: light;
@@ -52,11 +52,36 @@
 
     header p { margin: .5rem 0; color: var(--muted); }
 
+    .sections {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: 1.5rem;
+    }
+
+    .sections a {
+      padding: .5rem .9rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .sections a:hover { border-color: var(--blue); color: var(--blue); }
+    .sections a:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+    section { scroll-margin-top: 1rem; }
+    section h2 { margin: 1.5rem 0 0; font-size: 1.6rem; }
+    .section-intro { margin: .25rem 0 1.2rem; color: var(--muted); }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 1rem;
-      padding-bottom: 3rem;
+      padding-bottom: 2rem;
     }
 
     .card {
@@ -79,73 +104,93 @@
 
     .card:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
     .number { color: var(--blue); font-size: .78rem; font-weight: 800; letter-spacing: .06em; }
-    h2 { margin: .25rem 0 .45rem; font-size: 1.15rem; }
+    .card h3 { margin: .25rem 0 .45rem; font-size: 1.15rem; }
     .card p { margin: 0; color: var(--muted); font-size: .92rem; }
   </style>
 </head>
 <body>
   <header class="wrap">
-    <div class="eyebrow">Sistemas Operativos Monopuesto</div>
-    <h1>Simuladores</h1>
-    <p>Pequeñas herramientas interactivas para aprender cómo funciona un ordenador.</p>
+    <div class="eyebrow">Recursos para el aula</div>
+    <h1>Explora y experimenta</h1>
+    <p>Simuladores y herramientas interactivas para aprender haciendo.</p>
+    <nav class="sections" aria-label="Secciones">
+      <a href="#som">SOM · Simuladores</a>
+      <a href="#tools">Tools · Herramientas</a>
+    </nav>
   </header>
 
   <main class="wrap">
+    <section id="som" aria-labelledby="som-title">
+      <h2 id="som-title">Sistemas Operativos Monopuesto</h2>
+      <p class="section-intro">Explora el funcionamiento de un ordenador con estos simuladores.</p>
     <div class="grid">
       <a class="card" href="SOM/simuladores/S01-computador-primitivo.html">
         <span class="number">SIMULADOR 01</span>
-        <h2>Computadora primitiva</h2>
+        <h3>Computadora primitiva</h3>
         <p>Ejecuta instrucciones sencillas y observa el funcionamiento básico de una computadora.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S02-simulador_procesos.html">
         <span class="number">SIMULADOR 02</span>
-        <h2>Planificación de procesos</h2>
+        <h3>Planificación de procesos</h3>
         <p>Compara algoritmos y visualiza cómo se reparten los tiempos de CPU.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S03-conversor-binario-decimal-hexadecimal.html">
         <span class="number">SIMULADOR 03</span>
-        <h2>Conversor de bases</h2>
+        <h3>Conversor de bases</h3>
         <p>Convierte números entre los sistemas binario, decimal y hexadecimal.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S04-numeros-negativos.html">
         <span class="number">SIMULADOR 04</span>
-        <h2>Números negativos</h2>
+        <h3>Números negativos</h3>
         <p>Experimenta con la representación en complemento a dos.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S05-bmp-viewer.html">
         <span class="number">SIMULADOR 05</span>
-        <h2>Visor BMP</h2>
+        <h3>Visor BMP</h3>
         <p>Explora cómo se almacena una imagen BMP, píxel a píxel y byte a byte.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S06-von-neuman.html">
         <span class="number">SIMULADOR 06</span>
-        <h2>ALU de 8 bits</h2>
+        <h3>ALU de 8 bits</h3>
         <p>Prueba operaciones aritméticas y lógicas en una unidad de 8 bits.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/s07-text-hex.html">
         <span class="number">SIMULADOR 07</span>
-        <h2>Texto y hexadecimal</h2>
+        <h3>Texto y hexadecimal</h3>
         <p>Observa y modifica la representación UTF-8 de un texto.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S08-mouse-data-inspector.html">
         <span class="number">SIMULADOR 08</span>
-        <h2>Inspector de datos del ratón</h2>
+        <h3>Inspector de datos del ratón</h3>
         <p>Analiza los paquetes HID, el movimiento, los botones y la telemetría de un ratón USB.</p>
       </a>
 
       <a class="card" href="SOM/simuladores/S09-programa-gui-terminal.html">
         <span class="number">SIMULADOR 09</span>
-        <h2>Un programa, tres vistas</h2>
+        <h3>Un programa, tres vistas</h3>
         <p>Compara una aplicación de escritorio, su uso desde la terminal y el código Python que hay detrás.</p>
       </a>
     </div>
+    </section>
+
+    <section id="tools" aria-labelledby="tools-title">
+      <h2 id="tools-title">Tools</h2>
+      <p class="section-intro">Herramientas para el aula y otros experimentos.</p>
+      <div class="grid">
+        <a class="card" href="utils/control_comportamiento_aula.html">
+          <span class="number">HERRAMIENTA 01</span>
+          <h3>Control de comportamiento en el aula</h3>
+          <p>Un recurso práctico para registrar y seguir el comportamiento en clase.</p>
+        </a>
+      </div>
+    </section>
   </main>
 </body>
 </html>

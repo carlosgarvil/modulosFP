@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laboratorio EXT (1º SMR) — Aprende cómo Linux guarda tus archivos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Animación de trazado paso a paso */
+    @keyframes traceStep {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+    }
+    .trace-glow {
+      animation: traceStep 1.2s infinite ease-in-out;
+      z-index: 20;
+      position: relative;
+    }
+
+    /* Sistema de Tooltips flotantes al pasar el ratón o tocar */
+    .has-tooltip {
+      position: relative;
+    }
+    .tooltip-box {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      width: max-content;
+      max-width: 240px;
+      z-index: 50;
+      pointer-events: none;
+      transition: all 0.18s ease-out;
+    }
+    .has-tooltip:hover .tooltip-box,
+    .has-tooltip:focus-within .tooltip-box {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Transiciones suaves en celdas */
+    .disk-card {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .disk-card:hover {
+      transform: translateY(-2px);
+    }
+    .tour-focus {
+      position: relative !important;
+      z-index: 61 !important;
+      box-shadow: 0 0 0 4px #38bdf8, 0 0 0 9999px rgba(2, 6, 23, 0.78) !important;
+      pointer-events: none;
+    }
+    .sim-top{background:#101e32;border-bottom:1px solid #2c405d;position:sticky;top:0;z-index:30;color:#e8f0fa;font:15px/1.45 system-ui,"Segoe UI",sans-serif}
+    .sim-top-inner{width:min(1440px,calc(100% - 2rem));margin:auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 0;flex-wrap:wrap}
+    .sim-brand{display:flex;align-items:center;gap:.8rem}.sim-logo{background:linear-gradient(135deg,#16a6d8,#5966dc);padding:.75rem;border-radius:14px;font-weight:900;color:#fff}
+    .sim-brand h1{font-size:1.15rem;font-weight:700;margin:0}.sim-brand p{font-size:.78rem;color:#a9c1d7;margin:.1rem 0 0}
+    .sim-top-actions{display:flex;gap:.5rem;flex-wrap:wrap}.sim-btn{border:0;border-radius:9px;padding:.65rem .85rem;background:#2659a6;color:#fff;font-weight:700;text-decoration:none;cursor:pointer}.sim-btn:hover{filter:brightness(1.16)}.sim-btn.secondary{background:#243650}
+    @media(max-width:850px){.sim-top{position:static}}
+
+    /* Scrollbar limpio */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
+
+  <header class="sim-top"><div class="sim-top-inner"><div class="sim-brand"><div class="sim-logo">EXT</div><div><h1>Laboratorio EXT</h1><p>1.º SMR · Del nombre al inodo y a los bloques</p></div></div><nav class="sim-top-actions" aria-label="Navegación"><a class="sim-btn secondary" href="../../index.html">← Simuladores</a><button class="sim-btn" onclick="startTour()" title="Repetir el recorrido inicial">▶ Tour inicial</button><a class="sim-btn" href="estructura-ext-three.html">Simulador 3D</a><a class="sim-btn secondary" href="S12-ntfs-mft-clusteres.html">Comparar con NTFS →</a></nav></div></header>
+
+  <!-- CONTENIDO PRINCIPAL EN 3 ZONAS CLARAS -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto p-4 space-y-4">
+    <div class="flex items-center justify-end gap-2 flex-wrap" aria-label="Ayuda y preferencias">
+      <button onclick="openGlossaryModal('glosario')" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-sm transition">📚 Guía</button>
+      <button onclick="openGlossaryModal('misiones')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold shadow-sm transition">🎯 Retos (<span id="missionCounter">0/4</span>)</button>
+      <button onclick="toggleTheme()" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema" class="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition"><span id="themeIcon">☀️</span></button>
+    </div>
+
+    <!-- ZONA 1: PANEL DE ACCIONES SENCILLAS Y TRAZADOR "¿QUÉ ESTÁ HACIENDO LINUX?" -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+      <!-- Panel de Acciones (5 columnas) -->
+      <div id="tourActions" class="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span>⚡</span> 1. Acciones en el Disco
+            </h2>
+            <button onclick="resetDisk(false)" class="text-xs font-mono text-rose-500 hover:underline font-semibold" title="Borra todo y deja el disco recién formateado">
+              ↻ Formatear disco
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button onclick="openCreateFileModal()" class="p-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex flex-col items-center justify-center gap-1 shadow-sm transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Crear archivo
+            </button>
+
+            <button onclick="openLinkModal('hard')" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex flex-col items-center justify-center gap-1 shadow-sm transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              Enlace duro (ln)
+            </button>
+
+            <button onclick="openLinkModal('sym')" class="p-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs flex flex-col items-center justify-center gap-1 shadow-sm transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Simbólico (ln -s)
+            </button>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-3 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/70 dark:border-slate-800">
+          💡 <strong>Consejo:</strong> Para <strong>leer</strong> o <strong>borrar</strong> un archivo, usa los botones de la tabla <em>"Carpeta Raíz /"</em> que tienes justo debajo.
+        </p>
+      </div>
+
+      <!-- Trazador Visual "¿Qué está haciendo Linux ahora mismo?" (7 columnas) -->
+      <div id="tourTracer" class="lg:col-span-7 bg-white dark:bg-slate-900 border-2 border-sky-500/30 dark:border-sky-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-ping"></span>
+            ¿Qué está haciendo Linux ahora mismo? (Trazador paso a paso)
+          </h2>
+          <span id="tracerCommandBadge" class="font-mono text-xs px-2.5 py-0.5 rounded-md bg-slate-900 text-emerald-400 border border-slate-700">
+            $ listo
+          </span>
+        </div>
+
+        <!-- Diagrama visual de flechas: Directorio -> Inodo -> Punteros -> Bloques -->
+        <div id="tracerStepsContainer" class="grid grid-cols-1 sm:grid-cols-4 gap-2 my-1">
+          <!-- Generado dinámicamente por JS -->
+        </div>
+
+        <p id="tracerExplanation" class="text-xs text-slate-600 dark:text-slate-300 mt-2 bg-sky-500/10 border border-sky-500/20 rounded-xl px-3 py-2 leading-relaxed">
+          Sistema montado y listo. Crea un archivo o haz clic en <strong>"Leer"</strong> sobre cualquier archivo para ver el camino que sigue Linux por el disco.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ZONA 2: MAPA VISUAL DEL DISCO (SUPERBLOQUE + BITMAPS + TABLA DE INODOS + BLOQUES) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+      <!-- COLUMNA IZQUIERDA (8 cols): ESTRUCTURAS FÍSICAS DEL DISCO -->
+      <div class="xl:col-span-8 space-y-4">
+
+        <!-- A. SUPERBLOQUE + INTERRUPTORES (BITMAPS) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+          <!-- Superbloque (4 cols) -->
+          <div class="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                <span>🧠</span> Superbloque
+              </h3>
+              <button onclick="openHelpModal('superbloque')" class="w-6 h-6 rounded-full bg-indigo-500/15 hover:bg-indigo-500 hover:text-white text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center transition" title="¿Qué es el Superbloque?">?</button>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">La "portada" del disco: resume cuánto espacio libre queda.</p>
+            <div id="superblockPanel" class="space-y-2 font-mono text-xs">
+              <!-- Rellenado por JS -->
+            </div>
+          </div>
+
+          <!-- Interruptores / Mapas de bits (8 cols) -->
+          <div id="tourBitmaps" class="md:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
+                <span>🎛️</span> Mapas de Bits (Interruptores: 0 = Libre · 1 = Ocupado)
+              </h3>
+              <button onclick="openHelpModal('bitmaps')" class="w-6 h-6 rounded-full bg-cyan-500/15 hover:bg-cyan-500 hover:text-white text-cyan-600 dark:text-cyan-400 font-bold text-xs flex items-center justify-center transition" title="¿Cómo funcionan los Bitmaps?">?</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              <!-- Bitmap de Inodos (8 bits) -->
+              <div class="bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1.5 flex justify-between">
+                  <span>Interruptores de Inodos (1..8)</span>
+                  <span class="font-mono text-[10px] text-cyan-500">8 bits</span>
+                </div>
+                <div id="inodeBitmapGrid" class="grid grid-cols-8 gap-1 font-mono text-xs"></div>
+              </div>
+
+              <!-- Bitmap de Bloques (24 bits) -->
+              <div class="bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1.5 flex justify-between">
+                  <span>Interruptores de Bloques (0..23)</span>
+                  <span class="font-mono text-[10px] text-emerald-500">24 bits</span>
+                </div>
+                <div id="blockBitmapGrid" class="grid grid-cols-12 gap-1 font-mono text-[10px]"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- B. TABLA DE INODOS (8 FICHAS DE BIBLIOTECA) -->
+        <div id="tourInodes" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <span>🪪</span> Tabla de Inodos (Las "Fichas de Biblioteca" o DNI de cada archivo)
+              </h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Cada inodo guarda los datos técnicos y dónde están los bloques, pero <strong>NUNCA guarda el nombre del archivo</strong>.</p>
+            </div>
+            <button onclick="openHelpModal('inodos')" class="w-6 h-6 rounded-full bg-amber-500/15 hover:bg-amber-500 hover:text-white text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center transition" title="¿Qué es un Inodo?">?</button>
+          </div>
+
+          <div id="inodeTableGrid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+            <!-- 8 Tarjetas grandes de Inodo -->
+          </div>
+        </div>
+
+        <!-- C. BLOQUES DE DATOS FÍSICOS (24 BLOQUES DE 4 KB) -->
+        <div id="tourBlocks" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                <span>📦</span> Bloques de Datos Físicos (24 cajas de 4 KB donde se guarda el contenido)
+              </h3>
+              <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 mt-1">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block"></span> Agenda Carpeta `/`</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-sky-500 inline-block"></span> Contenido Archivo</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-fuchsia-500 inline-block"></span> Bloque Indirecto (lista punteros)</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-dashed border-rose-400 inline-block"></span> Datos residuales (borrado)</span>
+              </div>
+            </div>
+            <button onclick="openHelpModal('bloques')" class="w-6 h-6 rounded-full bg-purple-500/15 hover:bg-purple-500 hover:text-white text-purple-600 dark:text-purple-400 font-bold text-xs flex items-center justify-center transition" title="¿Cómo funcionan los Bloques de Datos?">?</button>
+          </div>
+
+          <div id="dataBlocksGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+            <!-- 24 Bloques grandes -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA (4 cols): CARPETA RAÍZ (AGENDA) + INSPECTOR DE FICHA -->
+      <div class="xl:col-span-4 space-y-4">
+
+        <!-- CARPETA RAÍZ '/' (LA AGENDA TELEFÓNICA) -->
+        <div id="tourDirectory" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <span>📒</span> Carpeta Raíz <code class="font-mono bg-indigo-500/10 px-1.5 py-0.5 rounded">/</code> (Agenda de Nombres)
+            </h3>
+            <button onclick="openHelpModal('directorio')" class="w-6 h-6 rounded-full bg-indigo-500/15 hover:bg-indigo-500 hover:text-white text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center transition" title="¿Cómo funciona una carpeta en Linux?">?</button>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+            Una carpeta en Linux es como una <strong>agenda telefónica</strong>: solo relaciona el <em>Nombre del archivo</em> con su <em>Número de Inodo</em>.
+          </p>
+
+          <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+            <table class="w-full text-left font-mono text-xs">
+              <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  <th class="py-2 px-2.5">Nombre</th>
+                  <th class="py-2 px-2">Inodo</th>
+                  <th class="py-2 px-2.5 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="rootDirTableBody" class="divide-y divide-slate-200 dark:divide-slate-800">
+                <!-- Entradas dinámicas -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- INSPECTOR DE FICHA (INODO O BLOQUE SELECCIONADO) -->
+        <div id="tourInspector" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 id="inspectorTitle" class="text-xs font-extrabold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+              <span>🔍</span> Ficha Detallada
+            </h3>
+            <div class="flex items-center gap-1.5">
+              <span id="inspectorBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">Inodo #2</span>
+              <button onclick="openHelpModal('punteros')" class="w-6 h-6 rounded-full bg-sky-500/15 hover:bg-sky-500 hover:text-white text-sky-600 dark:text-sky-400 font-bold text-xs flex items-center justify-center transition" title="¿Qué son los punteros directos e indirectos?">?</button>
+            </div>
+          </div>
+
+          <div id="inspectorContent" class="text-xs space-y-3">
+            <!-- Contenido dinámico -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <div id="tourOverlay" class="fixed inset-0 z-[60] bg-slate-950/80 hidden" aria-hidden="true"></div>
+  <div id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle" aria-describedby="tourText" class="fixed z-[62] hidden w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-sky-400 bg-white dark:bg-slate-900 p-4 shadow-2xl">
+    <div class="flex items-center justify-between gap-3">
+      <span id="tourProgress" class="text-xs font-bold text-sky-600 dark:text-sky-400"></span>
+      <button onclick="endTour()" class="text-xs font-semibold text-slate-500 hover:text-rose-500" aria-label="Cerrar tour">Salir ✕</button>
+    </div>
+    <h2 id="tourTitle" class="mt-2 text-base font-extrabold"></h2>
+    <p id="tourText" class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300"></p>
+    <div class="mt-4 flex justify-between gap-2">
+      <button id="tourBack" onclick="changeTourStep(-1)" class="rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-bold">← Atrás</button>
+      <button id="tourNext" onclick="changeTourStep(1)" class="rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 1: CREAR ARCHIVO (FORMULARIO MINIMALISTA)
+       ========================================================================= -->
+  <div id="createFileModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-extrabold flex items-center gap-2">
+          <span>📄</span> Crear Nuevo Archivo
+        </h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <form onsubmit="submitCreateFile(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nombre del archivo</label>
+          <input id="inputFileName" type="text" required maxlength="16" placeholder="ej. apuntes.txt" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-sm focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+            <label>¿Cuántas cajas (bloques de 4 KB) ocupa?</label>
+            <span id="sliderBlocksLabel" class="font-mono text-sky-500">2 bloques (8 KB)</span>
+          </div>
+          <input id="inputFileBlocks" type="range" min="1" max="5" value="2" oninput="updateBlocksSlider(this.value)" class="w-full accent-sky-500 cursor-pointer" />
+          <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Elige bloques para explorar los punteros. El texto de ejemplo no llena necesariamente todas las cajas.</p>
+          <div id="indirectWarningBox" class="mt-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-600 dark:text-slate-300">
+            Con 1 a 3 bloques caben en los <strong>3 punteros directos</strong> del inodo.
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Texto que quieres guardar dentro</label>
+          <input id="inputFileText" type="text" maxlength="80" value="Apuntes de Sistemas Operativos 1 SMR" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xs focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAllModals()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow">Guardar en disco</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: CREAR ENLACE DURO O SIMBÓLICO
+       ========================================================================= -->
+  <div id="linkModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-2">
+        <h3 id="linkModalTitle" class="text-base font-extrabold">Crear Enlace</h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <div id="linkModalAnalogy" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed"></div>
+
+      <form onsubmit="submitCreateLink(event)" class="space-y-4 text-sm">
+        <input type="hidden" id="inputLinkType" value="hard" />
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Archivo original al que apunta</label>
+          <select id="inputLinkTarget" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xs focus:outline-none focus:border-sky-500"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nombre del nuevo enlace</label>
+          <input id="inputLinkName" type="text" required maxlength="16" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-sm focus:outline-none focus:border-sky-500" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAllModals()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">Cancelar</button>
+          <button id="linkSubmitBtn" type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow">Crear enlace</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: AYUDA CONTEXTUAL (?) DE CADA SECCIÓN
+       ========================================================================= -->
+  <div id="helpModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span id="helpModalIcon" class="text-2xl">📘</span>
+          <h3 id="helpModalTitle" class="text-base font-extrabold">Título de ayuda</h3>
+        </div>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs sm:text-sm leading-relaxed">
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-500 block mb-1">📖 Explicación sencilla</span>
+          <p id="helpModalDesc" class="text-slate-700 dark:text-slate-200"></p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 block mb-1">💡 Analogía del mundo real</span>
+          <p id="helpModalAnalogy" class="text-slate-700 dark:text-slate-200"></p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1">🛠️ Ejemplo práctico en este simulador</span>
+          <p id="helpModalExample" class="text-slate-700 dark:text-slate-300"></p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeAllModals()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow">¡Entendido!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 4: GUÍA RÁPIDA / GLOSARIO Y MISIONES DE LABORATORIO (1º SMR)
+       ========================================================================= -->
+  <div id="glossaryModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <button id="tabBtnGlosario" onclick="switchGlossaryTab('glosario')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition">
+            📚 Glosario Visual (1º SMR)
+          </button>
+          <button id="tabBtnMisiones" onclick="switchGlossaryTab('misiones')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+            🎯 4 Retos Prácticos
+          </button>
+        </div>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <!-- Pestaña 1: Glosario Visual -->
+      <div id="tabContentGlosario" class="overflow-y-auto space-y-3 text-xs pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div class="font-extrabold text-amber-600 dark:text-amber-400 text-sm mb-1">🪪 Inodo = Ficha de biblioteca / DNI</div>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed">Cada archivo tiene un inodo; varios nombres pueden compartirlo mediante enlaces duros. Guarda sus datos técnicos y las direcciones de sus bloques. <strong>El nombre está en el directorio, no en el inodo.</strong></p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+            <div class="font-extrabold text-indigo-600 dark:text-indigo-400 text-sm mb-1">📒 Directorio = Agenda telefónica</div>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed">Una carpeta es simplemente una tabla de dos columnas: <code>Nombre → Nº de Inodo</code>. Así puedes llamar a un archivo <code>notas.txt</code> en lugar de acordarte de que es el "Inodo #3".</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+            <div class="font-extrabold text-cyan-600 dark:text-cyan-400 text-sm mb-1">🎛️ Bitmaps = Panel de interruptores</div>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed">Son listas de ceros y unos. Si un interruptor está en <strong>0</strong>, ese inodo o bloque está libre. Si está en <strong>1</strong>, está ocupado. Sirve para que Linux encuentre hueco al instante.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <div class="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mb-1">🔗 Enlace Duro vs Simbólico</div>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed"><strong>Enlace duro (<code>ln</code>):</strong> dos nombres en la agenda que apuntan al <em>mismo inodo</em>. <strong>Simbólico (<code>ln -s</code>):</strong> un acceso directo con su propio inodo que guarda la ruta del original.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña 2: Misiones de Laboratorio -->
+      <div id="tabContentMisiones" class="hidden overflow-y-auto space-y-3 text-xs pr-1">
+        <p class="text-slate-500 dark:text-slate-400">Completa estas 4 prácticas reales en el simulador. Se marcarán automáticamente en verde conforme las vayas realizando:</p>
+        <div id="missionsListContainer" class="space-y-2.5">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-4 mt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeAllModals()" class="px-5 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN FLOTANTE (TOAST) -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white border border-slate-700 px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center gap-2.5 max-w-sm">
+    <span id="toastIcon" class="text-base">ℹ️</span>
+    <span id="toastMsg">Mensaje</span>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * SIMULADOR DIDÁCTICO EXT4 PARA 1º DE SMR
+     * Diseño compacto y claro:
+     * - 8 Inodos (#1 reservado, #2 carpeta raíz '/', #3..#8 disponibles)
+     * - 24 Bloques de datos de 4 KB (#0 usado por '/', #1..#23 disponibles)
+     * - 3 Punteros directos + 1 Puntero indirecto simple por inodo
+     * ============================================================================
+     */
+
+    const TOTAL_INODES = 8;
+    const TOTAL_BLOCKS = 24;
+    const BLOCK_SIZE_KB = 4;
+    const DIRECT_LIMIT = 3;
+
+    // Diccionario de Ayuda Contextual (?) para cada sección
+    const HELP_CONTENT = {
+      superbloque: {
+        icon: "🧠",
+        title: "El Superbloque (La portada del disco)",
+        desc: "El Superbloque es una pequeña zona al principio de la partición donde Linux guarda la información general del sistema de archivos: cuántos inodos y bloques existen en total, cuántos quedan libres y qué tamaño tiene cada bloque (normalmente 4 KB).",
+        analogy: "Es como el cartel luminoso a la entrada de un aparcamiento que dice: 'Plazas totales: 24 | Libres: 20'. Sin él, el sistema no sabría si el disco está lleno o vacío.",
+        example: "Fíjate en cómo bajan los 'Inodos libres' y 'Bloques libres' en el Superbloque cada vez que creas un archivo nuevo."
+      },
+      bitmaps: {
+        icon: "🎛️",
+        title: "Mapas de Bits (Inode Bitmap y Block Bitmap)",
+        desc: "Son dos listas muy rápidas de ceros (0) y unos (1). Cada bit representa un inodo o un bloque físico. Un '0' significa que está libre y se puede usar; un '1' significa que está ocupado.",
+        analogy: "Imagina un tablero de interruptores de luz: si la luz está apagada (0), la habitación está libre; si está encendida (1), hay alguien dentro.",
+        example: "Cuando borras un archivo con 'rm', Linux simplemente cambia sus interruptores de 1 a 0 en el bitmap. ¡Por eso borrar un archivo grande tarda menos de un segundo!"
+      },
+      inodos: {
+        icon: "🪪",
+        title: "Tabla de Inodos (Las fichas de cada archivo)",
+        desc: "Un inodo es una estructura de datos que almacena toda la información administrativa de un archivo: su tipo, permisos (rwx), tamaño, contador de enlaces duros (Links) y los punteros que indican en qué bloques del disco están sus datos.",
+        analogy: "Es como la ficha catalográfica de un libro en una biblioteca o el DNI de una persona: contiene todos sus datos importantes, pero el nombre del archivo NO está dentro del inodo, sino en la carpeta.",
+        example: "En Linux, el Inodo #1 está reservado para sectores defectuosos y el Inodo #2 es siempre la carpeta raíz '/'."
+      },
+      directorio: {
+        icon: "📒",
+        title: "Directorio / Carpeta (La agenda telefónica)",
+        desc: "En Linux, una carpeta no contiene realmente los archivos dentro; es un archivo especial cuya tabla solo guarda parejas de (Nombre del archivo → Número de Inodo).",
+        analogy: "Es exactamente igual que la agenda de contactos de tu móvil: tú buscas el nombre 'Mamá' (nombre del archivo) y la agenda te da su número de teléfono (número de inodo) para poder llamarla.",
+        example: "Mira la tabla de la Carpeta Raíz '/': verás que 'hola.txt' apunta al Inodo #3. Si haces clic en '#3', abrirás su ficha."
+      },
+      bloques: {
+        icon: "📦",
+        title: "Bloques de Datos (Las cajas de 4 KB)",
+        desc: "El espacio útil del disco se divide en trozos del mismo tamaño llamados bloques (habitualmente de 4096 bytes = 4 KB). Aquí es donde se guarda el texto, fotos o vídeos reales de tus archivos.",
+        analogy: "Son como cajas de mudanza numeradas del #0 al #23. Si tienes una enciclopedia muy grande, la repartes en varias cajas y apuntas en tu ficha qué números de caja has usado.",
+        example: "En este modelo, al borrar un archivo su caja pasa a 'libre (0)' y conserva el texto hasta que otro archivo la reutiliza. En un disco real no siempre puede recuperarse."
+      },
+      punteros: {
+        icon: "👉",
+        title: "Punteros Directos vs Puntero Indirecto Simple",
+        desc: "Dentro de cada inodo hay espacio limitado para apuntar a bloques. En este simulador caben 3 punteros directos (apuntan directamente a 3 cajas de datos). Si un archivo necesita 4 o más bloques, el inodo usa su Puntero Indirecto Simple, que apunta a un bloque especial usado solo como lista de direcciones.",
+        analogy: "Si tienes 3 amigos, apuntas sus teléfonos directamente en tu mano (punteros directos). Si tienes más, apuntas en tu mano 'mira la libreta roja' (puntero indirecto) y en esa libreta escribes los demás números.",
+        example: "Prueba a crear un archivo de 4 o 5 bloques: verás aparecer un bloque de color fucsia (Bloque Indirecto) que guarda las direcciones de los bloques extra."
+      }
+    };
+
+    // Estado del simulador
+    let state = {
+      inodeBitmap: [],
+      blockBitmap: [],
+      inodes: [],
+      blocks: [],
+      selectedType: 'inode',
+      selectedId: 2,
+      traceInodes: [],
+      traceBlocks: [],
+      tracerSteps: [],
+      tracerCommand: '$ listo',
+      tracerText: '',
+      missions: {
+        createdFile: false,
+        deletedRemnant: false,
+        usedLinks: false,
+        usedIndirect: false
+      },
+      linkTypesTried: { hard: false, sym: false }
+    };
+
+    /**
+     * Inicializa o formatea el disco (mkfs.ext4)
+     */
+    function resetDisk(silent = false) {
+      state.missions = { createdFile: false, deletedRemnant: false, usedLinks: false, usedIndirect: false };
+      state.linkTypesTried = { hard: false, sym: false };
+      state.inodeBitmap = Array(TOTAL_INODES).fill(false);
+      state.blockBitmap = Array(TOTAL_BLOCKS).fill(false);
+      state.inodes = [];
+      state.blocks = [];
+
+      for (let i = 1; i <= TOTAL_INODES; i++) {
+        state.inodes.push({
+          id: i,
+          allocated: false,
+          type: '-', // '-' archivo, 'd' carpeta, 'l' enlace simbólico
+          permissions: 'rw-r--r--',
+          sizeKB: 0,
+          linksCount: 0,
+          directPointers: [], // hasta 3 bloques
+          indirectPointer: null, // 1 bloque indirecto simple
+          symlinkTarget: null
+        });
+      }
+
+      for (let b = 0; b < TOTAL_BLOCKS; b++) {
+        state.blocks.push({
+          id: b,
+          allocated: false,
+          role: 'free', // 'free' | 'dir' | 'data' | 'indirect'
+          ownerInode: null,
+          content: '',
+          dirEntries: [],
+          pointerList: [],
+          remnant: false
+        });
+      }
+
+      // Inodo #1 reservado (Bad blocks)
+      state.inodeBitmap[0] = true;
+      state.inodes[0].allocated = true;
+      state.inodes[0].permissions = '---------';
+      state.inodes[0].linksCount = 1;
+
+      // Inodo #2 = Carpeta raíz '/' y Bloque #0 = su agenda de entradas
+      state.inodeBitmap[1] = true;
+      state.blockBitmap[0] = true;
+
+      const rootInode = state.inodes[1];
+      rootInode.allocated = true;
+      rootInode.type = 'd';
+      rootInode.permissions = 'rwxr-xr-x';
+      rootInode.sizeKB = 4;
+      rootInode.linksCount = 2;
+      rootInode.directPointers = [0];
+
+      const rootBlock = state.blocks[0];
+      rootBlock.allocated = true;
+      rootBlock.role = 'dir';
+      rootBlock.ownerInode = 2;
+      rootBlock.dirEntries = [
+        { name: '.', inode: 2 },
+        { name: '..', inode: 2 }
+      ];
+
+      // Creamos un archivo inicial de ejemplo: hola.txt
+      createFileInternal('hola.txt', 2, '¡Hola! Este texto está guardado en dos bloques de 4 KB.', true);
+
+      state.selectedType = 'inode';
+      state.selectedId = 3;
+      setTracer(
+        '$ mkfs.ext4 /dev/sda1',
+        [
+          { step: '1. Superbloque', detail: '8 inodos y 24 bloques listos', active: true },
+          { step: '2. Carpeta /', detail: 'Inodo #2 → Bloque #0', active: true },
+          { step: '3. Ejemplo', detail: 'hola.txt → Inodo #3', active: true },
+          { step: '4. Bloques', detail: 'Datos en cajas #1 y #2', active: true }
+        ],
+        "Disco formateado. Hemos creado 'hola.txt' automáticamente para que veas cómo ocupa el Inodo #3 y los bloques #1 y #2."
+      );
+
+      renderAll();
+      if (!silent) showToast("Disco formateado desde cero (mkfs.ext4)", "🧹");
+    }
+
+    /**
+     * Busca el primer inodo libre (empezando en #3)
+     */
+    function findFreeInode() {
+      for (let i = 2; i < TOTAL_INODES; i++) {
+        if (!state.inodeBitmap[i]) return i + 1;
+      }
+      return null;
+    }
+
+    /**
+     * Busca N bloques libres en el Bitmap de Bloques
+     */
+    function findFreeBlocks(count) {
+      const list = [];
+      for (let b = 0; b < TOTAL_BLOCKS; b++) {
+        if (!state.blockBitmap[b]) {
+          list.push(b);
+          if (list.length === count) return list;
+        }
+      }
+      return null;
+    }
+
+    function existsInRoot(name) {
+      return state.blocks[0].dirEntries.some(e => e.name === name);
+    }
+
+    /**
+     * Crear un archivo regular
+     */
+    function createFileInternal(name, numBlocks, text, silent = false) {
+      name = name.trim();
+      if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,15}$/.test(name)) {
+        if (!silent) showToast("Usa 1–16 caracteres: letras, números, _, - o punto.", "⚠️");
+        return false;
+      }
+      if (existsInRoot(name)) {
+        if (!silent) showToast(`Ya existe un archivo llamado '${name}'.`, "⚠️");
+        return false;
+      }
+
+      const needsIndirect = numBlocks > DIRECT_LIMIT;
+      const totalNeeded = needsIndirect ? numBlocks + 1 : numBlocks;
+
+      const freeInodeId = findFreeInode();
+      if (!freeInodeId) {
+        if (!silent) showToast("¡No quedan inodos libres! Borra algún archivo.", "❌");
+        return false;
+      }
+
+      const freeBlocks = findFreeBlocks(totalNeeded);
+      if (!freeBlocks) {
+        if (!silent) showToast(`Faltan bloques libres (se necesitan ${totalNeeded}).`, "❌");
+        return false;
+      }
+
+      // 1. Ocupar inodo en el bitmap y rellenar su ficha
+      state.inodeBitmap[freeInodeId - 1] = true;
+      const inode = state.inodes[freeInodeId - 1];
+      inode.allocated = true;
+      inode.type = '-';
+      inode.permissions = 'rw-r--r--';
+      inode.sizeKB = numBlocks * BLOCK_SIZE_KB;
+      inode.linksCount = 1;
+      inode.directPointers = [];
+      inode.indirectPointer = null;
+      inode.symlinkTarget = null;
+
+      // 2. Asignar cajas de datos
+      const dataBlocks = freeBlocks.slice(0, numBlocks);
+      const indirectBlkId = needsIndirect ? freeBlocks[numBlocks] : null;
+      const partLen = Math.max(1, Math.ceil(text.length / numBlocks));
+
+      dataBlocks.forEach((blkId, idx) => {
+        state.blockBitmap[blkId] = true;
+        const blk = state.blocks[blkId];
+        blk.allocated = true;
+        blk.role = 'data';
+        blk.ownerInode = freeInodeId;
+        blk.remnant = false;
+        blk.content = text.slice(idx * partLen, (idx + 1) * partLen) || `[Parte ${idx + 1} de ${name}]`;
+
+        if (idx < DIRECT_LIMIT) {
+          inode.directPointers.push(blkId);
+        }
+      });
+
+      // Si usa puntero indirecto simple (más de 3 bloques)
+      if (needsIndirect && indirectBlkId !== null) {
+        const extraBlocks = dataBlocks.slice(DIRECT_LIMIT);
+        state.blockBitmap[indirectBlkId] = true;
+        const indBlk = state.blocks[indirectBlkId];
+        indBlk.allocated = true;
+        indBlk.role = 'indirect';
+        indBlk.ownerInode = freeInodeId;
+        indBlk.remnant = false;
+        indBlk.pointerList = extraBlocks;
+        indBlk.content = `Lista punteros → ${extraBlocks.map(b => '#' + b).join(', ')}`;
+        inode.indirectPointer = indirectBlkId;
+      }
+
+      // 3. Apuntar en la agenda de la Carpeta Raíz '/'
+      state.blocks[0].dirEntries.push({ name, inode: freeInodeId });
+
+      if (!silent) {
+        state.missions.createdFile = true;
+        if (needsIndirect) state.missions.usedIndirect = true;
+
+        selectItem('inode', freeInodeId);
+        highlightDisk([2, freeInodeId], [0, ...freeBlocks]);
+        setTracer(
+          `$ crear ${name} (simulación)`,
+          [
+            { step: '1. Interruptores', detail: `Inodo #${freeInodeId} → 1`, active: true },
+            { step: '2. Agenda /', detail: `'${name}' → Inodo #${freeInodeId}`, active: true },
+            { step: '3. Ficha Inodo', detail: needsIndirect ? '3 directos + 1 indirecto' : `${numBlocks} puntero(s) directo(s)`, active: true },
+            { step: '4. Cajas Datos', detail: `Bloques: ${freeBlocks.map(b => '#' + b).join(', ')}`, active: true }
+          ],
+          needsIndirect
+            ? `¡Archivo grande creado! Como ocupa ${numBlocks} bloques y solo caben 3 punteros directos en el Inodo #${freeInodeId}, Linux usó el Bloque #${indirectBlkId} como bloque indirecto.`
+            : `Linux buscó un inodo libre (#${freeInodeId}), anotó '${name}' en la carpeta '/' y guardó el contenido en los bloques ${dataBlocks.map(b => '#' + b).join(', ')}.`
+        );
+        showToast(`Archivo '${name}' guardado en Inodo #${freeInodeId}`, "✅");
+      }
+
+      renderAll();
+      return true;
+    }
+
+    /**
+     * Crear Enlace Duro (ln origen destino)
+     */
+    function createHardLink(targetName, linkName) {
+      linkName = linkName.trim();
+      if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,15}$/.test(linkName) || existsInRoot(linkName)) {
+        showToast("Usa un nombre libre de 1–16 caracteres: letras, números, _, - o punto.", "⚠️");
+        return;
+      }
+      const targetEntry = state.blocks[0].dirEntries.find(e => e.name === targetName);
+      if (!targetEntry) return;
+
+      const inode = state.inodes[targetEntry.inode - 1];
+      inode.linksCount += 1;
+      state.blocks[0].dirEntries.push({ name: linkName, inode: inode.id });
+
+      state.linkTypesTried.hard = true;
+      state.missions.usedLinks = state.linkTypesTried.hard && state.linkTypesTried.sym;
+      const blocks = getInodeBlocks(inode);
+
+      selectItem('inode', inode.id);
+      highlightDisk([2, inode.id], [0, ...blocks]);
+      setTracer(
+        `$ ln ${targetName} ${linkName}`,
+        [
+          { step: '1. Agenda /', detail: `'${linkName}' → Inodo #${inode.id}`, active: true },
+          { step: '2. Mismo Inodo', detail: `Comparte el Inodo #${inode.id}`, active: true },
+          { step: '3. Contador Links', detail: `Sube a Links: ${inode.linksCount}`, active: true },
+          { step: '4. Sin gasto extra', detail: '0 bloques nuevos usados', active: true }
+        ],
+        `¡Enlace duro creado! '${targetName}' y '${linkName}' son dos nombres distintos en la carpeta '/', pero ambos apuntan exactamente al MISMO Inodo #${inode.id} (Links = ${inode.linksCount}).`
+      );
+      showToast(`Enlace duro '${linkName}' apunta al Inodo #${inode.id}`, "🔗");
+      renderAll();
+    }
+
+    /**
+     * Crear Enlace Simbólico / Acceso directo (ln -s origen destino)
+     */
+    function createSymLink(targetName, linkName) {
+      linkName = linkName.trim();
+      if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,15}$/.test(linkName) || existsInRoot(linkName)) {
+        showToast("Usa un nombre libre de 1–16 caracteres: letras, números, _, - o punto.", "⚠️");
+        return;
+      }
+      const freeInodeId = findFreeInode();
+      if (!freeInodeId) {
+        showToast("No quedan inodos libres para crear el acceso directo.", "❌");
+        return;
+      }
+
+      state.inodeBitmap[freeInodeId - 1] = true;
+      const symInode = state.inodes[freeInodeId - 1];
+      symInode.allocated = true;
+      symInode.type = 'l';
+      symInode.permissions = 'rwxrwxrwx';
+      symInode.sizeKB = 0;
+      symInode.linksCount = 1;
+      symInode.directPointers = [];
+      symInode.indirectPointer = null;
+      symInode.symlinkTarget = targetName;
+
+      state.blocks[0].dirEntries.push({ name: linkName, inode: freeInodeId });
+      state.linkTypesTried.sym = true;
+      state.missions.usedLinks = state.linkTypesTried.hard && state.linkTypesTried.sym;
+
+      selectItem('inode', freeInodeId);
+      highlightDisk([2, freeInodeId], [0]);
+      setTracer(
+        `$ ln -s ${targetName} ${linkName}`,
+        [
+          { step: '1. Nuevo Inodo', detail: `Asigna Inodo #${freeInodeId} (tipo l)`, active: true },
+          { step: '2. Agenda /', detail: `'${linkName}' → Inodo #${freeInodeId}`, active: true },
+          { step: '3. Ruta guardada', detail: `Apunta al texto "${targetName}"`, active: true },
+          { step: '4. Independiente', detail: 'Si borras el original, se rompe', active: true }
+        ],
+        `¡Enlace simbólico creado! A diferencia del enlace duro, este sí gasta un nuevo Inodo (#${freeInodeId}) que solo guarda el nombre "${targetName}" como un acceso directo.`
+      );
+      showToast(`Enlace simbólico '${linkName}' creado en Inodo #${freeInodeId}`, "↪️");
+      renderAll();
+    }
+
+    /**
+     * Leer un archivo y animar el camino completo (cat nombre)
+     */
+    function readFile(name) {
+      const entries = state.blocks[0].dirEntries;
+      const entry = entries.find(e => e.name === name);
+      if (!entry) return;
+
+      const inode = state.inodes[entry.inode - 1];
+
+      // Caso 1: Enlace simbólico
+      if (inode.type === 'l') {
+        const targetEntry = entries.find(e => e.name === inode.symlinkTarget);
+        if (!targetEntry) {
+          selectItem('inode', inode.id);
+          highlightDisk([2, inode.id], [0]);
+          setTracer(
+            `$ cat ${name}`,
+            [
+              { step: '1. Agenda /', detail: `'${name}' → Inodo #${inode.id}`, active: true },
+              { step: '2. Inodo Enlace', detail: `Busca "${inode.symlinkTarget}"`, active: true },
+              { step: '3. ¡ERROR!', detail: 'El archivo original no existe', active: true },
+              { step: '4. Enlace roto', detail: 'No such file or directory', active: true }
+            ],
+            `¡Enlace simbólico roto! El Inodo #${inode.id} intenta abrir "${inode.symlinkTarget}", pero ese archivo fue borrado de la carpeta '/'.`
+          );
+          showToast(`Error: enlace simbólico roto ('${inode.symlinkTarget}' no existe)`, "⚠️");
+          return;
+        }
+
+        const targetInode = state.inodes[targetEntry.inode - 1];
+        const blocks = getInodeBlocks(targetInode);
+        selectItem('inode', targetInode.id);
+        highlightDisk([2, inode.id, targetInode.id], [0, ...blocks]);
+        setTracer(
+          `$ cat ${name}`,
+          [
+            { step: '1. Agenda /', detail: `'${name}' → Inodo #${inode.id}`, active: true },
+            { step: '2. Salto Symlink', detail: `Redirige a '${inode.symlinkTarget}'`, active: true },
+            { step: '3. Inodo Real', detail: `Abre Inodo #${targetInode.id}`, active: true },
+            { step: '4. Cajas Datos', detail: `Lee bloques ${blocks.map(b => '#' + b).join(', ')}`, active: true }
+          ],
+          `Al leer el enlace simbólico '${name}', Linux pasa por el Inodo #${inode.id}, lee la ruta "${inode.symlinkTarget}", salta al Inodo #${targetInode.id} y recoge sus datos.`
+        );
+        showToast(`Leyendo '${name}' a través de su enlace simbólico`, "📖");
+        return;
+      }
+
+      // Caso 2: Archivo regular (o enlace duro)
+      const blocks = getInodeBlocks(inode);
+      selectItem('inode', inode.id);
+      highlightDisk([2, inode.id], [0, ...blocks]);
+      setTracer(
+        `$ cat ${name}`,
+        [
+          { step: '1. Agenda /', detail: `Busca '${name}' → Inodo #${inode.id}`, active: true },
+          { step: '2. Ficha Inodo', detail: `Lee punteros del Inodo #${inode.id}`, active: true },
+          { step: '3. Recorrido', detail: inode.indirectPointer !== null ? `Directos + Indirecto #${inode.indirectPointer}` : 'Punteros directos', active: true },
+          { step: '4. Cajas Datos', detail: `Lee bloques ${blocks.map(b => '#' + b).join(', ')}`, active: true }
+        ],
+        `Camino completado: Linux buscó '${name}' en la carpeta '/' (Bloque #0), fue a su ficha (Inodo #${inode.id}) y leyó las cajas ${blocks.map(b => '#' + b).join(', ')}.`
+      );
+      showToast(`Leyendo '${name}' (recorrido iluminado en el disco)`, "📖");
+    }
+
+    /**
+     * Borrar una entrada de la carpeta (rm nombre)
+     */
+    function deleteFile(name) {
+      const entries = state.blocks[0].dirEntries;
+      const idx = entries.findIndex(e => e.name === name);
+      if (idx === -1) return;
+
+      const inodeId = entries[idx].inode;
+      const inode = state.inodes[inodeId - 1];
+
+      // Quitar de la agenda de la carpeta '/'
+      entries.splice(idx, 1);
+      inode.linksCount -= 1;
+
+      if (inode.linksCount > 0) {
+        // Sigue vivo por otro enlace duro
+        selectItem('inode', inode.id);
+        highlightDisk([2, inode.id], [0]);
+        setTracer(
+          `$ rm ${name}`,
+          [
+            { step: '1. Agenda /', detail: `Borra el nombre '${name}'`, active: true },
+            { step: '2. Ficha Inodo', detail: `Inodo #${inode.id} baja a Links: ${inode.linksCount}`, active: true },
+            { step: '3. ¡Protegido!', detail: 'Como Links > 0, NO se borra', active: true },
+            { step: '4. Datos intactos', detail: 'El otro enlace sigue funcionando', active: true }
+          ],
+          `Se eliminó '${name}' de la carpeta '/', pero como el Inodo #${inode.id} aún tiene otro enlace duro (Links = ${inode.linksCount}), sus bloques NO se liberan.`
+        );
+        showToast(`'${name}' borrado, pero el archivo sigue vivo (Links: ${inode.linksCount})`, "🛡️");
+      } else {
+        // Links = 0 -> Liberar interruptores en bitmaps
+        state.inodeBitmap[inodeId - 1] = false;
+        const freedBlocks = getInodeBlocks(inode);
+
+        freedBlocks.forEach(bId => {
+          state.blockBitmap[bId] = false;
+          state.blocks[bId].allocated = false;
+          state.blocks[bId].remnant = true; // Quedan datos residuales
+        });
+
+        inode.allocated = false;
+        inode.directPointers = [];
+        inode.indirectPointer = null;
+        inode.symlinkTarget = null;
+        inode.sizeKB = 0;
+
+        if (freedBlocks.length > 0) {
+          state.missions.deletedRemnant = true;
+        }
+
+        selectItem('inode', 2);
+        highlightDisk([2], [0, ...freedBlocks]);
+        setTracer(
+          `$ rm ${name}`,
+          [
+            { step: '1. Agenda /', detail: `Quita '${name}' de la lista`, active: true },
+            { step: '2. Links = 0', detail: `Inodo #${inodeId} pasa a 0 (libre)`, active: true },
+            { step: '3. Bitmaps a 0', detail: freedBlocks.length ? `Bloques ${freedBlocks.map(b => '#' + b).join(', ')} → 0` : 'Sin bloques de datos', active: true },
+            { step: '4. Dato curioso', detail: 'El texto sigue dentro hasta sobrescribirse', active: true }
+          ],
+          `¡Archivo '${name}' eliminado! Linux apagó (puso a 0) el Inodo #${inodeId} y sus bloques en los Mapas de Bits. Fíjate en que los bloques quedan con borde discontinuo: el contenido sigue ahí hasta que otro archivo los reutilice.`
+        );
+        showToast(`'${name}' eliminado: interruptores puestos a 0`, "🗑️");
+      }
+
+      renderAll();
+    }
+
+    function getInodeBlocks(inode) {
+      const list = [...inode.directPointers];
+      if (inode.indirectPointer !== null) {
+        list.push(inode.indirectPointer);
+        const indBlk = state.blocks[inode.indirectPointer];
+        if (indBlk) list.push(...indBlk.pointerList);
+      }
+      return list;
+    }
+
+    function getRegularFiles() {
+      return state.blocks[0].dirEntries
+        .filter(e => e.name !== '.' && e.name !== '..')
+        .filter(e => state.inodes[e.inode - 1].type === '-');
+    }
+
+    function selectItem(type, id) {
+      state.selectedType = type;
+      state.selectedId = id;
+      renderAll();
+    }
+
+    let highlightTimer = null;
+    function highlightDisk(inodes, blocks) {
+      state.traceInodes = inodes;
+      state.traceBlocks = blocks;
+      renderAll();
+      clearTimeout(highlightTimer);
+      highlightTimer = setTimeout(() => {
+        state.traceInodes = [];
+        state.traceBlocks = [];
+        renderAll();
+      }, 3800);
+    }
+
+    function setTracer(command, steps, explanation) {
+      state.tracerCommand = command;
+      state.tracerSteps = steps;
+      state.tracerText = explanation;
+    }
+
+    /**
+     * ============================================================================
+     * RENDERIZADO DE TODA LA INTERFAZ
+     * ============================================================================
+     */
+    function renderAll() {
+      renderTracer();
+      renderSuperblock();
+      renderBitmaps();
+      renderInodeTable();
+      renderDataBlocks();
+      renderRootDirectory();
+      renderInspector();
+      updateMissionBadge();
+    }
+
+    function renderTracer() {
+      document.getElementById('tracerCommandBadge').textContent = state.tracerCommand;
+      document.getElementById('tracerExplanation').textContent = state.tracerText;
+
+      const container = document.getElementById('tracerStepsContainer');
+      container.innerHTML = state.tracerSteps.map((s, idx) => `
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+          <div class="text-[11px] font-extrabold text-sky-600 dark:text-sky-400 flex items-center justify-between">
+            <span>${s.step}</span>
+            ${idx < state.tracerSteps.length - 1 ? '<span class="hidden sm:inline text-slate-400">→</span>' : ''}
+          </div>
+          <div class="text-[11px] font-mono text-slate-700 dark:text-slate-200 mt-1 leading-snug">${s.detail}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderSuperblock() {
+      const usedInodes = state.inodeBitmap.filter(Boolean).length;
+      const usedBlocks = state.blockBitmap.filter(Boolean).length;
+
+      document.getElementById('superblockPanel').innerHTML = `
+        <div class="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+          <span class="text-slate-500">Formato:</span>
+          <span class="font-bold text-indigo-500">Linux EXT4 (4 KB/blq)</span>
+        </div>
+        <div class="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+          <span class="text-slate-500">Inodos libres:</span>
+          <span class="font-bold text-cyan-600 dark:text-cyan-400">${TOTAL_INODES - usedInodes} de ${TOTAL_INODES}</span>
+        </div>
+        <div class="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+          <span class="text-slate-500">Bloques libres:</span>
+          <span class="font-bold text-emerald-600 dark:text-emerald-400">${TOTAL_BLOCKS - usedBlocks} de ${TOTAL_BLOCKS}</span>
+        </div>
+      `;
+    }
+
+    function renderBitmaps() {
+      // Bitmap de Inodos
+      document.getElementById('inodeBitmapGrid').innerHTML = state.inodeBitmap.map((used, idx) => {
+        const id = idx + 1;
+        const traced = state.traceInodes.includes(id);
+        return `
+          <div onclick="selectItem('inode', ${id})" class="has-tooltip cursor-pointer rounded-lg py-1.5 text-center border transition ${traced ? 'trace-glow ring-2 ring-sky-400' : ''} ${
+            used
+              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-700 dark:text-cyan-300 font-bold'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+          }">
+            <div class="text-[9px] opacity-75">i${id}</div>
+            <div>${used ? '1' : '0'}</div>
+            <div class="tooltip-box bg-slate-900 text-white text-[11px] font-sans font-normal p-2 rounded-lg shadow-lg border border-slate-700">
+              <strong>Interruptor Inodo #${id}: ${used ? '1 (Ocupado)' : '0 (Libre)'}</strong><br/>
+              ${used ? 'Este inodo está asignado a un archivo o carpeta.' : 'Disponible para un nuevo archivo.'}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Bitmap de Bloques
+      document.getElementById('blockBitmapGrid').innerHTML = state.blockBitmap.map((used, blkId) => {
+        const traced = state.traceBlocks.includes(blkId);
+        return `
+          <div onclick="selectItem('block', ${blkId})" class="has-tooltip cursor-pointer rounded-md py-1 text-center border transition ${traced ? 'trace-glow ring-2 ring-emerald-400' : ''} ${
+            used
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 font-bold'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+          }">
+            <div class="text-[8px] opacity-70">${blkId}</div>
+            <div>${used ? '1' : '0'}</div>
+            <div class="tooltip-box bg-slate-900 text-white text-[11px] font-sans font-normal p-2 rounded-lg shadow-lg border border-slate-700">
+              <strong>Interruptor Bloque #${blkId}: ${used ? '1 (Ocupado)' : '0 (Libre)'}</strong><br/>
+              ${used ? 'Caja de 4 KB actualmente en uso.' : 'Caja libre lista para guardar datos.'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderInodeTable() {
+      document.getElementById('inodeTableGrid').innerHTML = state.inodes.map(inode => {
+        const selected = state.selectedType === 'inode' && state.selectedId === inode.id;
+        const traced = state.traceInodes.includes(inode.id);
+
+        let cardStyle = 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 text-slate-400';
+        let label = 'Libre';
+        let icon = '⬜';
+
+        if (inode.allocated) {
+          if (inode.id === 1) {
+            cardStyle = 'bg-slate-200/80 dark:bg-slate-800 border-slate-400/50 text-slate-600 dark:text-slate-300';
+            label = 'Reservado';
+            icon = '🔒';
+          } else if (inode.type === 'd') {
+            cardStyle = 'bg-indigo-500/15 border-indigo-500/50 text-indigo-700 dark:text-indigo-300';
+            label = 'Carpeta /';
+            icon = '📁';
+          } else if (inode.type === 'l') {
+            cardStyle = 'bg-amber-500/15 border-amber-500/50 text-amber-700 dark:text-amber-300';
+            label = 'Symlink';
+            icon = '↪️';
+          } else {
+            cardStyle = 'bg-sky-500/15 border-sky-500/50 text-sky-700 dark:text-sky-300';
+            label = 'Archivo';
+            icon = '📄';
+          }
+        }
+
+        return `
+          <div onclick="selectItem('inode', ${inode.id})"
+            class="disk-card has-tooltip cursor-pointer rounded-xl p-2.5 border font-mono text-xs flex flex-col justify-between ${cardStyle} ${
+              selected ? 'ring-2 ring-sky-500 shadow-md' : ''
+            } ${traced ? 'trace-glow ring-2 ring-amber-400' : ''}">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-sm">#${inode.id}</span>
+              <span>${icon}</span>
+            </div>
+            <div class="font-sans font-bold text-[11px] mt-1.5 truncate">${label}</div>
+            ${inode.allocated && inode.id !== 1 ? `
+              <div class="mt-1 text-[10px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 inline-block w-fit">
+                Links: ${inode.linksCount}
+              </div>
+            ` : '<div class="mt-1 text-[10px] opacity-60">0 KB</div>'}
+
+            <div class="tooltip-box bg-slate-900 text-white text-[11px] font-sans font-normal p-2.5 rounded-xl shadow-xl border border-slate-700 text-left">
+              <strong>Inodo #${inode.id} (${label})</strong><br/>
+              ${inode.allocated && inode.id !== 1
+                ? `Tiene <strong>Links: ${inode.linksCount}</strong> (nombres en carpetas que apuntan a este inodo). Haz clic para ver su ficha.`
+                : inode.id === 1
+                  ? 'Inodo #1 reservado por Linux para bloques defectuosos.'
+                  : 'Ficha vacía (interruptor a 0 en el bitmap).'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDataBlocks() {
+      document.getElementById('dataBlocksGrid').innerHTML = state.blocks.map(blk => {
+        const selected = state.selectedType === 'block' && state.selectedId === blk.id;
+        const traced = state.traceBlocks.includes(blk.id);
+
+        let style = 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400';
+        let badge = 'Libre';
+        let tooltipText = `Bloque #${blk.id} vacío (4 KB libres).`;
+
+        if (blk.allocated) {
+          if (blk.role === 'dir') {
+            style = 'bg-indigo-500/20 border-indigo-500/60 text-indigo-700 dark:text-indigo-300';
+            badge = 'Agenda /';
+            tooltipText = `Bloque #${blk.id}: Guarda la tabla de nombres de la carpeta raíz '/'.`;
+          } else if (blk.role === 'indirect') {
+            style = 'bg-fuchsia-500/20 border-fuchsia-500/60 text-fuchsia-700 dark:text-fuchsia-300';
+            badge = `Indir. i${blk.ownerInode}`;
+            tooltipText = `Bloque Indirecto #${blk.id}: No guarda texto, sino una lista con los números de bloques extra del Inodo #${blk.ownerInode}.`;
+          } else {
+            style = 'bg-sky-500/20 border-sky-500/60 text-sky-700 dark:text-sky-300';
+            badge = `Inodo #${blk.ownerInode}`;
+            tooltipText = `Bloque #${blk.id}: Contiene 4 KB de datos del Inodo #${blk.ownerInode}.`;
+          }
+        } else if (blk.remnant) {
+          style = 'bg-rose-500/5 border-dashed border-rose-400/70 text-rose-500/80 dark:text-rose-400/80';
+          badge = 'Residual';
+          tooltipText = `Bloque #${blk.id} marcado como LIBRE (0), pero conserva datos residuales de un archivo borrado hasta que se sobrescriba.`;
+        }
+
+        return `
+          <div onclick="selectItem('block', ${blk.id})"
+            class="disk-card has-tooltip cursor-pointer rounded-xl p-2 border font-mono text-center ${style} ${
+              selected ? 'ring-2 ring-purple-500 shadow-md' : ''
+            } ${traced ? 'trace-glow ring-2 ring-sky-400' : ''}">
+            <div class="text-xs font-extrabold">#${blk.id}</div>
+            <div class="text-[10px] font-sans font-semibold truncate mt-0.5">${badge}</div>
+            <div class="tooltip-box bg-slate-900 text-white text-[11px] font-sans font-normal p-2 rounded-lg shadow-xl border border-slate-700 text-left">
+              ${tooltipText}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderRootDirectory() {
+      const entries = state.blocks[0].dirEntries;
+      document.getElementById('rootDirTableBody').innerHTML = entries.map(entry => {
+        const inode = state.inodes[entry.inode - 1];
+        const isSpecial = entry.name === '.' || entry.name === '..';
+        const isBroken = inode.type === 'l' && !entries.some(e => e.name === inode.symlinkTarget);
+
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="py-2 px-2.5 font-bold ${isBroken ? 'text-rose-500 line-through' : ''}">
+              ${entry.name}
+              ${inode.type === 'l' ? `<span class="block text-[10px] font-normal text-amber-500">↪ apunta a: ${inode.symlinkTarget}</span>` : ''}
+            </td>
+            <td class="py-2 px-2">
+              <button onclick="selectItem('inode', ${entry.inode})" class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 font-extrabold">
+                #${entry.inode}
+              </button>
+            </td>
+            <td class="py-2 px-2.5 text-right space-x-1">
+              ${!isSpecial ? `
+                <button onclick="readFile('${entry.name}')" class="px-2 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500 hover:text-white text-sky-600 dark:text-sky-400 font-sans font-bold text-[11px] transition" title="Leer archivo y trazar camino">
+                  Leer
+                </button>
+                <button onclick="deleteFile('${entry.name}')" class="px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 font-sans font-bold text-[11px] transition" title="Borrar archivo (rm)">
+                  Borrar
+                </button>
+              ` : '<span class="text-[10px] font-sans text-slate-400">sistema</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderInspector() {
+      const titleEl = document.getElementById('inspectorTitle');
+      const badgeEl = document.getElementById('inspectorBadge');
+      const contentEl = document.getElementById('inspectorContent');
+
+      if (state.selectedType === 'inode') {
+        const inode = state.inodes[state.selectedId - 1];
+        titleEl.innerHTML = `<span>🪪</span> Ficha del Inodo (DNI del archivo)`;
+        badgeEl.textContent = `Inodo #${inode.id}`;
+
+        if (!inode.allocated) {
+          contentEl.innerHTML = `
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-1.5">
+              <div class="text-2xl">⬜</div>
+              <div class="font-bold text-slate-600 dark:text-slate-300">Inodo #${inode.id} Libre</div>
+              <p class="text-[11px] text-slate-500">Su interruptor está en <strong>0</strong>. Cuando crees un archivo nuevo, Linux podrá usar esta ficha.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const names = state.blocks[0].dirEntries.filter(e => e.inode === inode.id).map(e => e.name);
+
+        // Punteros directos (3)
+        let directHtml = '';
+        for (let i = 0; i < DIRECT_LIMIT; i++) {
+          const blk = inode.directPointers[i];
+          directHtml += `
+            <div ${blk !== undefined ? `onclick="selectItem('block', ${blk})"` : ''}
+              class="p-2 rounded-lg border font-mono text-[11px] flex justify-between items-center ${
+                blk !== undefined
+                  ? 'cursor-pointer bg-sky-500/10 border-sky-500/40 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20'
+                  : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400'
+              }">
+              <span>Directo ${i + 1}:</span>
+              <span class="font-bold">${blk !== undefined ? `Caja #${blk}` : 'Vacío'}</span>
+            </div>
+          `;
+        }
+
+        // Puntero indirecto simple (1)
+        let indirectHtml = '';
+        if (inode.indirectPointer !== null) {
+          const indBlk = state.blocks[inode.indirectPointer];
+          indirectHtml = `
+            <div class="p-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/40 space-y-1.5">
+              <div onclick="selectItem('block', ${inode.indirectPointer})" class="cursor-pointer flex justify-between font-mono text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-300">
+                <span>Indirecto Simple:</span>
+                <span>→ Caja Lista #${inode.indirectPointer}</span>
+              </div>
+              <div class="flex flex-wrap gap-1 pt-1 border-t border-fuchsia-500/20">
+                ${indBlk.pointerList.map(b => `
+                  <button onclick="selectItem('block', ${b})" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 font-mono text-[10px] font-bold">
+                    → Caja #${b}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          indirectHtml = `
+            <div class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 font-mono text-[11px] flex justify-between text-slate-400">
+              <span>Indirecto Simple:</span>
+              <span>No necesario</span>
+            </div>
+          `;
+        }
+
+        const typeLabel = inode.id === 1 ? 'Reservado sistema' : inode.type === 'd' ? 'Carpeta (d)' : inode.type === 'l' ? 'Enlace simbólico (l)' : 'Archivo regular (-)';
+
+        contentEl.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 font-mono space-y-2">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Tipo:</span>
+              <span class="font-bold text-indigo-500">${typeLabel}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Permisos:</span>
+              <span class="font-bold text-emerald-500">${inode.type}${inode.permissions}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Espacio de datos asignado:</span>
+              <span class="font-bold">${inode.sizeKB} KB</span>
+            </div>
+            <div class="flex justify-between items-center has-tooltip">
+              <span class="text-slate-400 underline decoration-dotted cursor-help">Enlaces duros (Links):</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-extrabold">${inode.linksCount}</span>
+              <div class="tooltip-box bg-slate-900 text-white text-[11px] font-sans font-normal p-2 rounded-lg shadow-lg border border-slate-700">
+                Indica cuántos nombres en carpetas apuntan a este inodo. Solo cuando llega a 0 se borra de verdad.
+              </div>
+            </div>
+            <div class="flex justify-between gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+              <span class="text-slate-400">Nombres en '/':</span>
+              <span class="font-bold text-sky-500 text-right">${names.length ? names.join(', ') : '(ninguno)'}</span>
+            </div>
+          </div>
+
+          ${inode.type === 'l' ? `
+            <div class="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs">
+              <div class="font-bold text-amber-600 dark:text-amber-400 mb-1">↪️ Contenido del Enlace Simbólico:</div>
+              <p class="font-mono text-slate-700 dark:text-slate-200">Ruta guardada: <strong>"${inode.symlinkTarget}"</strong></p>
+            </div>
+          ` : `
+            <div class="space-y-1.5">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Punteros (¿En qué cajas están los datos?)</div>
+              <div class="grid grid-cols-1 gap-1.5">${directHtml}</div>
+              ${indirectHtml}
+            </div>
+          `}
+        `;
+      } else {
+        // Inspector de Bloque
+        const blk = state.blocks[state.selectedId];
+        titleEl.innerHTML = `<span>📦</span> Contenido de la Caja (Bloque 4 KB)`;
+        badgeEl.textContent = `Bloque #${blk.id}`;
+
+        let bodyHtml = '';
+        if (blk.role === 'dir' && blk.allocated) {
+          bodyHtml = `
+            <div class="text-[11px] font-bold text-indigo-500 mb-1.5">Agenda guardada dentro del Bloque #0:</div>
+            <div class="space-y-1 font-mono">
+              ${blk.dirEntries.map(e => `
+                <div onclick="selectItem('inode', ${e.inode})" class="cursor-pointer flex justify-between p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30">
+                  <span>Nombre: <strong>"${e.name}"</strong></span>
+                  <span class="text-amber-500 font-bold">→ Inodo #${e.inode}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (blk.role === 'indirect' && blk.allocated) {
+          bodyHtml = `
+            <div class="p-3 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 space-y-2">
+              <div class="font-bold text-fuchsia-600 dark:text-fuchsia-300">Bloque Indirecto Simple</div>
+              <p class="text-[11px] text-slate-600 dark:text-slate-300">Esta caja guarda direcciones hacia los bloques extra del archivo:</p>
+              <div class="flex flex-wrap gap-1.5 font-mono">
+                ${blk.pointerList.map(p => `<button onclick="selectItem('block', ${p})" class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-600 dark:text-sky-300 font-bold">Caja #${p}</button>`).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          bodyHtml = `
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 font-mono text-xs break-words">
+              ${blk.content || '<span class="text-slate-400">Caja completamente vacía (00 00 00...)</span>'}
+            </div>
+            ${blk.remnant ? `
+              <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-600 dark:text-rose-300 leading-relaxed">
+                <strong>💡 ¡Dato importante para SMR!</strong> Este bloque está marcado como <strong>LIBRE (0)</strong> en el Mapa de Bits, pero su texto sigue aquí dentro porque Linux no pierde tiempo borrando los datos físicamente hasta que otro archivo los sobrescriba.
+              </div>
+            ` : ''}
+          `;
+        }
+
+        contentEl.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-[11px] font-mono">
+              <span class="px-2.5 py-1 rounded-lg font-bold ${blk.allocated ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}">
+                ${blk.allocated ? `OCUPADO (Inodo #${blk.ownerInode})` : 'LIBRE (Interruptor = 0)'}
+              </span>
+              ${blk.ownerInode ? `<button onclick="selectItem('inode', ${blk.ownerInode})" class="text-sky-500 font-bold underline">Ver Inodo #${blk.ownerInode}</button>` : ''}
+            </div>
+            ${bodyHtml}
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * ============================================================================
+     * MISIONES DE LABORATORIO (1º SMR)
+     * ============================================================================
+     */
+    function updateMissionBadge() {
+      const done = Object.values(state.missions).filter(Boolean).length;
+      document.getElementById('missionCounter').textContent = `${done}/4`;
+    }
+
+    function renderMissionsList() {
+      const list = [
+        {
+          key: 'createdFile',
+          title: "Misión 1: Crea tu primer archivo",
+          desc: "Pulsa en 'Crear archivo' y guarda un archivo nuevo. Observa cómo ocupa un inodo libre y se apunta en la Carpeta Raíz '/'.",
+          action: () => { closeAllModals(); openCreateFileModal(); }
+        },
+        {
+          key: 'deletedRemnant',
+          title: "Misión 2: ¿Qué pasa al borrar con 'rm'?",
+          desc: "Pulsa 'Borrar' en cualquier archivo. Comprueba que sus interruptores pasan a 0, pero sus bloques quedan con 'datos residuales'.",
+          action: () => { closeAllModals(); showToast("Pulsa el botón 'Borrar' en la tabla Carpeta Raíz '/'", "👉"); }
+        },
+        {
+          key: 'usedLinks',
+          title: "Misión 3: Enlace duro vs Enlace simbólico",
+          desc: "Crea los dos tipos de enlace. Compara sus inodos y el contador 'Links'; después borra el nombre original y prueba a leer ambos.",
+          action: () => { closeAllModals(); openLinkModal(state.linkTypesTried.hard ? 'sym' : 'hard'); }
+        },
+        {
+          key: 'usedIndirect',
+          title: "Misión 4: Archivo grande y puntero indirecto",
+          desc: "Crea un archivo de 4 o 5 bloques. Como un inodo solo tiene 3 punteros directos, verás aparecer un Bloque Indirecto (fucsia).",
+          action: () => {
+            closeAllModals();
+            openCreateFileModal();
+            document.getElementById('inputFileName').value = 'video_clase.mp4';
+            document.getElementById('inputFileBlocks').value = 4;
+            updateBlocksSlider(4);
+          }
+        }
+      ];
+
+      document.getElementById('missionsListContainer').innerHTML = list.map(m => {
+        const completed = state.missions[m.key];
+        return `
+          <div class="p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+            completed
+              ? 'bg-emerald-500/10 border-emerald-500/40'
+              : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+          }">
+            <div>
+              <div class="font-extrabold text-sm flex items-center gap-2 ${completed ? 'text-emerald-600 dark:text-emerald-400' : ''}">
+                <span>${completed ? '✅' : '⬜'}</span> ${m.title}
+              </div>
+              <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">${m.desc}</p>
+            </div>
+            ${!completed ? `
+              <button onclick="(${m.action.toString()})()" class="shrink-0 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] transition">
+                Hacer ahora
+              </button>
+            ` : '<span class="shrink-0 text-xs font-extrabold text-emerald-500">¡Hecho!</span>'}
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * ============================================================================
+     * CONTROL DE MODALES Y UTILIDADES UI
+     * ============================================================================
+     */
+    function openCreateFileModal() {
+      document.getElementById('inputFileName').value = `tema_${Math.floor(Math.random() * 9 + 1)}.txt`;
+      document.getElementById('inputFileBlocks').value = 2;
+      updateBlocksSlider(2);
+      showModal('createFileModal');
+    }
+
+    function updateBlocksSlider(val) {
+      const n = parseInt(val, 10);
+      document.getElementById('sliderBlocksLabel').textContent = `${n} bloque${n > 1 ? 's' : ''} (${n * 4} KB)`;
+      const box = document.getElementById('indirectWarningBox');
+      if (n > DIRECT_LIMIT) {
+        box.innerHTML = `⚡ <strong>¡Activado Puntero Indirecto!</strong> Como ${n} bloques no caben en los 3 punteros directos, Linux usará <strong>1 bloque extra</strong> como lista de direcciones.`;
+        box.className = "mt-2 p-2.5 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-[11px] text-fuchsia-700 dark:text-fuchsia-300";
+      } else {
+        box.innerHTML = `Con 1 a 3 bloques caben en los <strong>3 punteros directos</strong> del inodo sin necesitar bloques extra.`;
+        box.className = "mt-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-600 dark:text-slate-300";
+      }
+    }
+
+    function submitCreateFile(e) {
+      e.preventDefault();
+      const name = document.getElementById('inputFileName').value;
+      const blocks = parseInt(document.getElementById('inputFileBlocks').value, 10);
+      const text = document.getElementById('inputFileText').value;
+      if (createFileInternal(name, blocks, text, false)) {
+        closeAllModals();
+      }
+    }
+
+    function openLinkModal(type) {
+      const files = getRegularFiles();
+      if (files.length === 0) {
+        showToast("Primero crea un archivo regular para poder enlazarlo.", "⚠️");
+        return;
+      }
+
+      document.getElementById('inputLinkType').value = type;
+      const select = document.getElementById('inputLinkTarget');
+      select.innerHTML = files.map(f => `<option value="${f.name}">${f.name} (Inodo #${f.inode})</option>`).join('');
+
+      if (type === 'hard') {
+        document.getElementById('linkModalTitle').innerHTML = `🔗 Crear Enlace Duro (<code class="font-mono text-emerald-500">ln</code>)`;
+        document.getElementById('linkModalAnalogy').innerHTML = `<strong>Analogía:</strong> Es como ponerle dos motes a la misma persona. En la agenda habrá dos nombres distintos, pero ambos apuntan al <strong>mismo DNI (mismo Inodo)</strong>.`;
+        document.getElementById('inputLinkName').value = `copia_${files[0].name.slice(0, 7)}`;
+        document.getElementById('linkSubmitBtn').className = "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow";
+      } else {
+        document.getElementById('linkModalTitle').innerHTML = `↪️ Crear Enlace Simbólico (<code class="font-mono text-amber-500">ln -s</code>)`;
+        document.getElementById('linkModalAnalogy').innerHTML = `<strong>Analogía:</strong> Es igual que un <strong>acceso directo de Windows</strong>. Crea un inodo nuevo y separado que solo guarda escrita la ruta hacia el archivo original.`;
+        document.getElementById('inputLinkName').value = `acceso_${files[0].name.slice(0, 6)}`;
+        document.getElementById('linkSubmitBtn').className = "px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow";
+      }
+
+      showModal('linkModal');
+    }
+
+    function submitCreateLink(e) {
+      e.preventDefault();
+      const type = document.getElementById('inputLinkType').value;
+      const target = document.getElementById('inputLinkTarget').value;
+      const name = document.getElementById('inputLinkName').value;
+      if (type === 'hard') createHardLink(target, name);
+      else createSymLink(target, name);
+      closeAllModals();
+    }
+
+    function openHelpModal(topicKey) {
+      const info = HELP_CONTENT[topicKey];
+      if (!info) return;
+      document.getElementById('helpModalIcon').textContent = info.icon;
+      document.getElementById('helpModalTitle').textContent = info.title;
+      document.getElementById('helpModalDesc').textContent = info.desc;
+      document.getElementById('helpModalAnalogy').textContent = info.analogy;
+      document.getElementById('helpModalExample').textContent = info.example;
+      showModal('helpModal');
+    }
+
+    function openGlossaryModal(tab = 'glosario') {
+      renderMissionsList();
+      switchGlossaryTab(tab);
+      showModal('glossaryModal');
+    }
+
+    function switchGlossaryTab(tab) {
+      const isGlosario = tab === 'glosario';
+      document.getElementById('tabContentGlosario').classList.toggle('hidden', !isGlosario);
+      document.getElementById('tabContentMisiones').classList.toggle('hidden', isGlosario);
+
+      document.getElementById('tabBtnGlosario').className = isGlosario
+        ? "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition"
+        : "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition";
+
+      document.getElementById('tabBtnMisiones').className = !isGlosario
+        ? "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition"
+        : "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition";
+    }
+
+    function showModal(id) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+
+    function closeAllModals() {
+      ['createFileModal', 'linkModal', 'helpModal', 'glossaryModal'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      });
+    }
+
+    let toastTimeout = null;
+    function showToast(msg, icon = "ℹ️") {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3600);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+    }
+
+    const TOUR_STEPS = [
+      { id: 'tourActions', title: 'Empieza por una acción', text: 'Crea un archivo. Después podrás leerlo, borrarlo o crear enlaces. El simulador ya trae hola.txt para explorar.' },
+      { id: 'tourDirectory', title: '1. Busca el nombre', text: 'La carpeta / guarda parejas nombre → número de inodo. Pulsa un número para abrir su ficha. El nombre no está dentro del inodo.' },
+      { id: 'tourInodes', title: '2. Consulta el inodo', text: 'El inodo guarda datos técnicos y punteros hacia los bloques. Dos nombres creados con un enlace duro pueden apuntar al mismo inodo.' },
+      { id: 'tourBlocks', title: '3. Llega a los bloques', text: 'Los bloques son las cajas donde se guarda el contenido. Pulsa una caja para inspeccionarla.' },
+      { id: 'tourBitmaps', title: 'Comprueba qué está libre', text: 'Los mapas de bits usan 0 para libre y 1 para ocupado. Cambian al crear o borrar archivos.' },
+      { id: 'tourTracer', title: 'Sigue el recorrido', text: 'Al pulsar Leer en la carpeta, el trazador muestra el camino completo: nombre → inodo → bloques. ¡Ya puedes probarlo!' }
+    ];
+    let tourStep = -1;
+    let tourTarget = null;
+    let tourPreviousFocus = null;
+
+    function positionTourCard() {
+      if (tourStep < 0 || !tourTarget) return;
+      const card = document.getElementById('tourCard');
+      const rect = tourTarget.getBoundingClientRect();
+      const width = card.offsetWidth;
+      const height = card.offsetHeight;
+      const gap = 16;
+      let top = rect.bottom + gap;
+      let left = Math.max(16, Math.min(rect.left, window.innerWidth - width - 16));
+      if (top + height > window.innerHeight - 16) top = rect.top - height - gap;
+      if (top < 16) {
+        top = Math.max(16, (window.innerHeight - height) / 2);
+        left = Math.max(16, (window.innerWidth - width) / 2);
+      }
+      card.style.top = `${top}px`;
+      card.style.left = `${left}px`;
+    }
+
+    function showTourStep(index) {
+      if (tourTarget) tourTarget.classList.remove('tour-focus');
+      tourStep = index;
+      const step = TOUR_STEPS[index];
+      tourTarget = document.getElementById(step.id);
+      tourTarget.scrollIntoView({ behavior: 'instant', block: 'center' });
+      tourTarget.classList.add('tour-focus');
+      document.getElementById('tourProgress').textContent = `Paso ${index + 1} de ${TOUR_STEPS.length}`;
+      document.getElementById('tourTitle').textContent = step.title;
+      document.getElementById('tourText').textContent = step.text;
+      document.getElementById('tourBack').disabled = index === 0;
+      document.getElementById('tourBack').classList.toggle('opacity-40', index === 0);
+      document.getElementById('tourNext').textContent = index === TOUR_STEPS.length - 1 ? 'Empezar a explorar ✓' : 'Siguiente →';
+      requestAnimationFrame(() => {
+        positionTourCard();
+        document.getElementById('tourNext').focus();
+      });
+    }
+
+    function startTour() {
+      if (tourStep >= 0) endTour();
+      closeAllModals();
+      tourPreviousFocus = document.activeElement;
+      document.getElementById('tourOverlay').classList.remove('hidden');
+      document.getElementById('tourCard').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      showTourStep(0);
+    }
+
+    function changeTourStep(delta) {
+      const next = tourStep + delta;
+      if (next >= TOUR_STEPS.length) return endTour();
+      if (next >= 0) showTourStep(next);
+    }
+
+    function endTour() {
+      if (tourTarget) tourTarget.classList.remove('tour-focus');
+      tourTarget = null;
+      tourStep = -1;
+      document.getElementById('tourOverlay').classList.add('hidden');
+      document.getElementById('tourCard').classList.add('hidden');
+      document.body.style.overflow = '';
+      if (tourPreviousFocus && tourPreviousFocus.focus) tourPreviousFocus.focus();
+      try { localStorage.setItem('s11-tour-seen', '1'); } catch (_) {}
+    }
+
+    window.addEventListener('resize', positionTourCard);
+    document.addEventListener('keydown', e => {
+      if (tourStep < 0) return;
+      if (e.key === 'Escape') endTour();
+      if (e.key === 'ArrowRight') changeTourStep(1);
+      if (e.key === 'ArrowLeft') changeTourStep(-1);
+      if (e.key === 'Tab') {
+        const buttons = [...document.querySelectorAll('#tourCard button:not(:disabled)')];
+        const first = buttons[0], last = buttons[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    // Iniciar simulador al cargar
+    window.onload = () => {
+      resetDisk(true);
+      try {
+        if (!localStorage.getItem('s11-tour-seen')) startTour();
+      } catch (_) { startTour(); }
+    };
+  </script>
+</body>
+</html>

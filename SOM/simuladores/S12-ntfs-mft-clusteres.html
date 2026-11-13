@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Laboratorio NTFS · MFT y clústeres · 1.º SMR</title>
+  <style>
+    :root{font:15px/1.45 system-ui,"Segoe UI",sans-serif;color:#e8f0fa;background:#08111f;scroll-behavior:smooth}
+    *{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+    .wrap{width:min(1440px,calc(100% - 2rem));margin:auto}.top{background:#101e32;border-bottom:1px solid #2c405d;position:sticky;top:0;z-index:10}.top-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 0;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:.8rem}.logo{background:linear-gradient(135deg,#16a6d8,#5966dc);padding:.75rem;border-radius:14px;font-weight:900}.brand h1{font-size:1.15rem;margin:0}.brand p{font-size:.78rem;color:#a9c1d7;margin:.1rem 0 0}.top-actions{display:flex;gap:.5rem;flex-wrap:wrap}.btn,.small{border:0;border-radius:9px;padding:.65rem .85rem;background:#2659a6;color:#fff;font-weight:700;text-decoration:none}.btn:hover,.small:hover{filter:brightness(1.16)}.btn.secondary{background:#243650}.btn.amber{background:#9a6413}.btn.danger{background:#8b3442}.btn:disabled{opacity:.45;cursor:default}.small{font-size:.76rem;padding:.35rem .55rem}.small.danger{background:#713240}
+    main{padding:1rem 0 2rem}.intro{background:#11253b;border:1px solid #27627c;border-radius:15px;padding:1rem;margin-bottom:1rem}.intro p{margin:.25rem 0 0;color:#bed4e6}.layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.panel{background:#111e30;border:1px solid #2a3c55;border-radius:15px;padding:1rem;min-width:0}.panel h2{font-size:1rem;margin:0 0 .35rem}.panel>p,.muted{color:#a9bed3;font-size:.83rem;margin:.2rem 0 .8rem}.actions{display:flex;gap:.5rem;flex-wrap:wrap}.wide{grid-column:1/-1}.trace{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0}.trace span{border:1px solid #347ba1;background:#14324a;color:#d3efff;border-radius:9px;padding:.45rem .65rem;font-size:.8rem;font-weight:700}.trace span+span:before{content:'→ ';color:#6fbee2}.message{background:#0c2b40;border-left:4px solid #35b6e3;padding:.7rem;border-radius:7px;min-height:3rem}.stats{display:flex;gap:.5rem;flex-wrap:wrap}.stat{background:#0b1929;border:1px solid #29435a;border-radius:9px;padding:.4rem .65rem;font-size:.77rem}.stat strong{color:#77dbd0}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:.55rem}.record,.cluster{border:1px solid #35516f;background:#15263c;border-radius:10px;padding:.65rem;text-align:left;color:inherit;min-width:0}.record{min-height:88px}.record strong,.cluster strong{display:block}.record small,.cluster small{display:block;color:#abc3d7;overflow-wrap:anywhere}.record.active,.cluster.active{outline:3px solid #fbbf24}.record.free,.cluster.free{opacity:.6}.record.system{border-color:#7e6db9}.record.resident{border-color:#4bb58c}.record.external,.cluster.used{border-color:#3e9fdb}.cluster.remnant{border-style:dashed;border-color:#d78674}.directory{width:100%;border-collapse:collapse;font-size:.85rem}.directory th,.directory td{border-bottom:1px solid #2d4058;padding:.5rem;text-align:left}.directory td:last-child{text-align:right;white-space:nowrap}.directory button{margin:.1rem}.tag{display:inline-block;border:1px solid #456280;border-radius:7px;padding:.17rem .4rem;font-size:.76rem;color:#cce3f4}.tag.green{border-color:#4bb58c;color:#8ee1b7}.tag.blue{border-color:#3e9fdb;color:#91d6ff}.tag.rose{border-color:#d78674;color:#ffc0b4}.detail{line-height:1.65;overflow-wrap:anywhere}.detail code{background:#0b1929;padding:.15rem .3rem;border-radius:5px}.detail ul{padding-left:1.2rem;margin:.35rem 0}.hint{font-size:.78rem;color:#adc4d8}.mission{display:flex;gap:.5rem;align-items:start;padding:.55rem;border-top:1px solid #2d4058}.mission b{color:#7cdbab}.mission.done{opacity:.65}.legend{display:flex;gap:.7rem;flex-wrap:wrap;color:#afc3d4;font-size:.76rem;margin:.5rem 0}.notice{color:#ffd0a0}.modal{position:fixed;inset:0;background:#020815d9;z-index:30;display:grid;place-items:center;padding:1rem}.modal[hidden]{display:none}.dialog{width:min(450px,100%);background:#17263a;border:1px solid #4b6888;border-radius:16px;padding:1.25rem;box-shadow:0 20px 70px #000a}.dialog h2{margin:0 0 .3rem}.dialog p{color:#b9cee0;font-size:.84rem}.dialog label{display:block;font-weight:700;margin:.7rem 0 .25rem}.dialog input,.dialog textarea,.dialog select{width:100%;background:#091727;color:#fff;border:1px solid #506780;border-radius:8px;padding:.6rem}.dialog textarea{min-height:85px;resize:vertical}.dialog .check{display:flex;gap:.5rem;align-items:center;font-weight:400}.dialog .check input{width:auto}.dialog footer{display:flex;justify-content:end;gap:.5rem;margin-top:1rem}.error{color:#ffb2a6;min-height:1.4em;font-size:.8rem}
+    .tour-shade{position:fixed;inset:0;background:#020814c9;z-index:40}.tour-shade[hidden],.tour-card[hidden]{display:none}.tour-focus{position:relative!important;z-index:41!important;box-shadow:0 0 0 4px #66d7ff,0 0 0 9999px #020814c9!important;pointer-events:none}.tour-card{position:fixed;z-index:42;background:#fff;color:#15243b;border:2px solid #43a7d7;border-radius:14px;box-shadow:0 20px 70px #0009;width:min(340px,calc(100vw - 2rem));padding:1rem}.tour-card h2{font-size:1rem;margin:.4rem 0}.tour-card p{font-size:.86rem;margin:.3rem 0 1rem}.tour-card footer{display:flex;justify-content:space-between;gap:.5rem}.tour-card .btn{font-size:.78rem}.tour-card .secondary{background:#d7e3ee;color:#15243b}
+    .guide{margin-bottom:1rem;border-color:#2f789b}.guide-head{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}.guide-head p{color:#afc9db;font-size:.83rem;margin:.2rem 0 .7rem}.guide-switch{display:flex;gap:.4rem;flex-wrap:wrap}.guide-switch button[aria-pressed="true"]{background:#1680ae}.diagram{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:stretch;gap:.35rem;margin:.8rem 0}.diagram-node{border:2px solid #36536c;border-radius:12px;background:#0c1c2d;padding:.75rem;min-height:100px;opacity:.48;transition:opacity .25s,transform .25s,border-color .25s,box-shadow .25s}.diagram-node strong{display:block;font-size:.88rem}.diagram-node small{display:block;color:#aec3d5;margin-top:.3rem;overflow-wrap:anywhere}.diagram-node.lit{opacity:1;border-color:#64d9ff;box-shadow:0 0 0 2px #3084a655;transform:translateY(-2px)}.diagram-node.current{border-color:#fbbf24;box-shadow:0 0 0 3px #fbbf2455}.diagram-node.skipped{opacity:.25;border-style:dashed}.diagram-arrow{align-self:center;color:#56738b;font-size:1.4rem;font-weight:900}.diagram-arrow.lit{color:#6bdcf8}.guide-caption{background:#092b42;border-left:4px solid #fbbf24;border-radius:8px;padding:.7rem;min-height:4rem}.guide-caption strong{display:block;color:#ffe4a1}.guide-caption p{margin:.25rem 0 0;color:#d5e8f4}.guide-controls{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.7rem}.guide-controls span{color:#a9c2d4;font-size:.8rem}.guide-buttons{display:flex;gap:.4rem}
+    .readout{margin-top:.8rem;border:2px solid #4bafc9;border-radius:10px;background:#071725;padding:.75rem}.readout[hidden]{display:none}.readout h3{margin:0 0 .2rem;font-size:.88rem;color:#8ee7f5}.readout p{margin:.2rem 0 .6rem;color:#b6d5e5;font-size:.78rem}.readout pre{margin:0;background:#122b3d;border-radius:7px;padding:.65rem;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 Consolas,monospace;max-height:140px;overflow:auto}.cluster.linked{border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf2455;background:#3a321c}
+    .volume-section{margin-bottom:1rem}.volume-section>p{color:#aec6d8;font-size:.82rem}.volume-map{background:linear-gradient(125deg,#d9edf9,#c3dcf0);border:2px solid #19384d;border-radius:24px;padding:1.1rem;color:#162b3d}.volume-map h2{text-align:center;color:#477492;font-size:clamp(1.4rem,3vw,2.2rem);font-weight:500;margin:0 0 1rem}.volume-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1.75fr;align-items:stretch;gap:clamp(.5rem,2vw,1.7rem)}.volume-card{position:relative;border:2px solid #26343e;border-radius:8px;min-height:145px;padding:.75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#242b30;background:#f8d9cf;font-size:1.1rem;line-height:1.2;transition:transform .18s,box-shadow .18s}.volume-card:hover,.volume-card:focus-visible,.volume-card[aria-pressed="true"]{transform:translateY(-3px);box-shadow:0 6px 0 #1c486777}.volume-card:nth-child(2){background:#dce9ca}.volume-card:nth-child(3){background:#dfddeb}.volume-card:nth-child(4){background:#ffe1bc}.volume-card small{font-size:.69rem;margin-top:.2rem}.volume-card .tip{visibility:hidden;opacity:0;position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);width:min(250px,75vw);background:#10253a;color:#fff;text-align:left;font-size:.77rem;line-height:1.35;padding:.65rem;border-radius:9px;box-shadow:0 8px 25px #0007;pointer-events:none;z-index:3;transition:opacity .15s}.volume-card:hover .tip,.volume-card:focus-visible .tip{visibility:visible;opacity:1}.volume-detail{background:#10283d;border-left:4px solid #f8c779;border-radius:8px;margin-top:.7rem;padding:.7rem}.volume-detail strong{color:#ffe4a6}.volume-detail p{margin:.25rem 0 0;font-size:.85rem;color:#d2e8f5}.volume-note{margin:.55rem 0 0;color:#b4cbda;font-size:.75rem}
+    @media(max-width:720px){.volume-grid{grid-template-columns:repeat(2,1fr)}.volume-card{min-height:115px}}@media(max-width:450px){.volume-grid{gap:.5rem}.volume-card{font-size:.92rem;padding:.4rem}.volume-card small{font-size:.63rem}}
+    @media(max-width:850px){.layout{grid-template-columns:1fr}.wide{grid-column:auto}.top{position:static}}@media(max-width:620px){.diagram{grid-template-columns:1fr;gap:.25rem}.diagram-node{min-height:auto}.diagram-arrow{transform:rotate(90deg);justify-self:center;line-height:1}.guide-controls{align-items:flex-start;flex-wrap:wrap}}@media(max-width:450px){.directory td,.directory th{padding:.35rem .2rem}.small{padding:.3rem}.brand p{max-width:260px}}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="wrap top-inner"><div class="brand"><div class="logo">NTFS</div><div><h1>Laboratorio NTFS</h1><p>1.º SMR · Del nombre al registro MFT y a los clústeres</p></div></div><nav class="top-actions" aria-label="Navegación"><a class="btn secondary" href="../../index.html">← Simuladores</a><button class="btn" id="startTour">▶ Tour inicial</button><a class="btn" href="estructura-ntfs-three.html">Simulador 3D</a><a class="btn secondary" href="S11-inodos-bloques-enlaces.html">Comparar con EXT →</a></nav></div></header>
+  <main class="wrap">
+    <div class="intro"><strong>La idea clave</strong><p>En NTFS, el directorio permite encontrar un <strong>registro de la MFT</strong>. Ese registro contiene atributos como <code>$FILE_NAME</code> y <code>$DATA</code>. Los datos pueden estar <strong>dentro del registro</strong> (residentes) o en <strong>clústeres</strong> señalados por él. Este disco pequeño es un modelo para aprender el recorrido.</p></div>
+    <section class="volume-section" id="volumePanel" aria-labelledby="volumeTitle"><div class="volume-map"><h2 id="volumeTitle">Volumen / partición NTFS</h2><div class="volume-grid" role="group" aria-label="Partes conceptuales del volumen NTFS"><button class="volume-card" data-volume="pbs" aria-pressed="false"><strong>PBS</strong><small>Sector de arranque<br>de la partición</small><span class="tip">Contiene datos necesarios para reconocer el volumen, como el tamaño del clúster y dónde localizar la MFT.</span></button><button class="volume-card" data-volume="mft" aria-pressed="true"><strong>MFT</strong><small>Master File Table</small><span class="tip">Tabla de registros de archivos. Cada registro contiene atributos y puede guardar datos residentes o referencias a clústeres.</span></button><button class="volume-card" data-volume="metadata" aria-pressed="false"><strong>Metadatos<br>del sistema</strong><small>$Bitmap · $LogFile</small><span class="tip">Archivos especiales que ayudan a NTFS a gestionar el espacio y registrar cambios. La propia MFT también es un metarchivo.</span></button><button class="volume-card" data-volume="user" aria-pressed="false"><strong>Datos y<br>directorios</strong><small>Archivos del usuario</small><span class="tip">Directorios para localizar nombres y clústeres que guardan el contenido no residente de los archivos.</span></button></div></div><div class="volume-detail" id="volumeDetail" role="status" aria-live="polite"><strong id="volumeDetailTitle">MFT · Tabla maestra de archivos</strong><p id="volumeDetailText">Es el índice central de NTFS. Sus registros describen archivos y directorios mediante atributos como $FILE_NAME y $DATA.</p></div><p class="volume-note">Pulsa una caja o pasa el ratón para obtener ayuda. Las cajas representan funciones: no indican tamaños ni posiciones físicas fijas y algunas categorías se solapan.</p></section>
+    <section class="panel guide" id="guidePanel" aria-labelledby="guideTitle">
+      <div class="guide-head"><div><h2 id="guideTitle">Explicación visual: sigue un archivo</h2><p>Un ejemplo guiado en 2D. Elige un caso y avanza paso a paso. La lámina usa el disco inicial; las acciones de abajo pueden cambiarlo.</p></div><div class="guide-switch" role="group" aria-label="Tipo de archivo"><button class="btn" id="guideResident" aria-pressed="true">nota.txt · residente</button><button class="btn secondary" id="guideExternal" aria-pressed="false">foto.bmp · en clústeres</button></div></div>
+      <div class="diagram" role="img" aria-label="Recorrido del archivo desde el directorio hasta sus datos"><div class="diagram-node" id="diagramDirectory"><strong>📁 Directorio raíz</strong><small id="diagramName"></small></div><span class="diagram-arrow" id="arrowOne">→</span><div class="diagram-node" id="diagramMft"><strong>🗂️ Registro MFT</strong><small id="diagramRecord"></small></div><span class="diagram-arrow" id="arrowTwo">→</span><div class="diagram-node" id="diagramData"><strong>📄 Atributo $DATA</strong><small id="diagramAttribute"></small></div><span class="diagram-arrow" id="arrowThree">→</span><div class="diagram-node" id="diagramClusters"><strong>💾 Clústeres externos</strong><small id="diagramClusterText"></small></div></div>
+      <div class="guide-caption" aria-live="polite"><strong id="guideStepTitle"></strong><p id="guideStepText"></p></div><div class="guide-controls"><span id="guideProgress"></span><div class="guide-buttons"><button class="btn secondary" id="guideBack">← Anterior</button><button class="btn" id="guideNext">Siguiente →</button></div></div>
+    </section>
+    <div class="layout">
+      <section class="panel" id="actionsPanel"><h2>1. Prueba acciones</h2><p>Crea archivos, compáralos y observa qué estructuras cambian.</p><div class="actions"><button class="btn" data-open="create">＋ Crear archivo</button><button class="btn amber" data-open="link">🔗 Enlace duro</button><button class="btn danger" id="reset">↻ Formatear</button></div><p class="hint">Para leer o borrar, usa los botones de la tabla del directorio.</p></section>
+      <section class="panel" id="tracePanel"><h2>¿Qué ha hecho NTFS?</h2><div class="trace" id="traceSteps"></div><div class="message" id="traceMessage" role="status" aria-live="polite"></div><div class="readout" id="readout" hidden><h3 id="readoutTitle">Contenido leído</h3><p id="readoutSource"></p><pre id="readoutContent"></pre></div></section>
+      <section class="panel" id="directoryPanel"><h2>2. Directorio raíz <code>\</code></h2><p>El directorio relaciona cada nombre con un número de registro MFT.</p><div style="overflow-x:auto"><table class="directory"><thead><tr><th>Nombre</th><th>Registro</th><th>Acciones</th></tr></thead><tbody id="directoryRows"></tbody></table></div></section>
+      <section class="panel" id="detailPanel"><h2 id="detailTitle">Inspector</h2><div class="detail" id="detail"></div></section>
+      <section class="panel wide" id="mftPanel"><h2>3. MFT: tabla maestra de archivos</h2><p>Cada ficha representa un registro. En este modelo se muestran los registros especiales #0 ($Mft), #5 (raíz) y #6 ($Bitmap); hay otros registros reservados que se omiten.</p><div class="legend"><span class="tag">Sistema</span><span class="tag green">$DATA residente</span><span class="tag blue">$DATA en clústeres</span><span class="tag rose">Libre</span></div><div class="grid" id="mftGrid"></div></section>
+      <section class="panel wide" id="clustersPanel"><h2>4. Clústeres de datos y $Bitmap</h2><p>Un 1 significa ocupado; un 0, disponible. Los archivos residentes no necesitan clústeres de datos externos en este modelo. Cada clúster representa 4 KiB.</p><div class="stats" id="stats"></div><div class="grid" id="clusterGrid" style="margin-top:.75rem"></div><p class="hint">El borde discontinuo indica datos que el simulador conserva tras borrar. En un equipo real su recuperación no está garantizada.</p></section>
+      <section class="panel wide" id="missionsPanel"><h2>Retos de clase <span id="score" class="tag"></span></h2><div id="missions"></div></section>
+    </div>
+  </main>
+  <div class="modal" id="formModal" hidden><form class="dialog" id="fileForm"><h2 id="formTitle"></h2><p id="formHelp"></p><label for="fileName">Nombre nuevo</label><input id="fileName" maxlength="24" required autocomplete="off" placeholder="ejemplo.txt"><div id="createFields"><label for="fileText">Contenido de ejemplo</label><textarea id="fileText" maxlength="300" placeholder="Escribe el contenido del archivo"></textarea><label class="check"><input id="forceExternal" type="checkbox"> Guardar en clústeres para ver el recorrido externo</label><label for="clusterCount">Clústeres que quieres asignar si se guarda fuera de la MFT</label><select id="clusterCount"><option value="1">1 clúster</option><option value="2">2 clústeres</option><option value="3">3 clústeres</option><option value="4">4 clústeres</option><option value="5">5 clústeres</option></select><p class="hint">Elegir 2 o más activa el almacenamiento externo. Es una asignación didáctica: el texto puede ocupar menos que el espacio asignado. Con más de 80 bytes también se usa al menos un clúster.</p></div><div id="linkFields" hidden><label for="linkTarget">Archivo existente</label><select id="linkTarget"></select><p class="hint">Un enlace duro añade un segundo nombre al mismo registro MFT.</p></div><div class="error" id="formError" role="alert"></div><footer><button class="btn secondary" type="button" id="cancelForm">Cancelar</button><button class="btn" type="submit">Guardar</button></footer></form></div>
+  <div class="tour-shade" id="tourShade" hidden></div><div class="tour-card" id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden><small id="tourCount"></small><h2 id="tourTitle"></h2><p id="tourText"></p><footer><button class="btn secondary" id="tourExit">Salir</button><span><button class="btn secondary" id="tourBack">←</button> <button class="btn" id="tourNext">Siguiente →</button></span></footer></div>
+  <script>
+    const RECORD_IDS = [0,5,6,16,17,18,19,20,21,22,23,24];
+    const CLUSTER_COUNT = 24;
+    const RESIDENT_LIMIT = 80; // Umbral exclusivamente didáctico; depende del espacio libre real en el registro.
+    const $ = id => document.getElementById(id);
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const byteSize = value => new TextEncoder().encode(value).length;
+    let state, selected = {type:'record',id:16}, formMode = 'create';
+
+    function setTrace(steps, message){$('traceSteps').replaceChildren(...steps.map(text=>{const el=document.createElement('span');el.textContent=text;return el}));$('traceMessage').textContent=message;$('readout').hidden=true}
+    function freeRecord(){return RECORD_IDS.slice(3).find(id=>!state.records[id])}
+    function freeCluster(){return state.clusters.find(c=>!c.used)}
+    function namesFor(id){return state.entries.filter(e=>e.record===id).map(e=>e.name)}
+    function validName(name){return name.length>0 && name.length<=24 && !/[\\/:*?"<>|]/.test(name) && !/[. ]$/.test(name) && name!=='.' && name!=='..'}
+    function reset(){
+      state={records:{0:{name:'$Mft',system:true},5:{name:'\\',system:true},6:{name:'$Bitmap',system:true}},entries:[],clusters:Array.from({length:CLUSTER_COUNT},(_,id)=>({id,used:false,owner:null,content:'',remnant:false})),missions:{create:false,resident:false,external:false,link:false,delete:false}};
+      createFile('nota.txt','Hola, soy un archivo pequeño.',false,true);
+      createFile('foto.bmp','Contenido de ejemplo de una imagen guardada fuera de la MFT.',true,true);
+      selected={type:'record',id:16};
+      setTrace(['Directorio','MFT','Clústeres si hacen falta'],'Disco de ejemplo listo. Lee nota.txt y foto.bmp para comparar sus recorridos.');
+      render();
+    }
+    function createFile(name,text,forceExternal=false,silent=false,requestedClusters=1){
+      name=name.trim();
+      if(!validName(name))return 'Nombre inválido. Usa hasta 24 caracteres y evita \\ / : * ? " < > | o punto final.';
+      if(state.entries.some(e=>e.name.toLowerCase()===name.toLowerCase()))return 'Ya existe ese nombre en el directorio.';
+      const id=freeRecord();if(id===undefined)return 'No quedan registros libres en este disco de ejemplo.';
+      const bytes=byteSize(text),external=forceExternal||requestedClusters>1||bytes>RESIDENT_LIMIT;
+      const count=external?Math.max(requestedClusters,Math.ceil(bytes/4096)):0;
+      const available=state.clusters.filter(c=>!c.used).slice(0,count);
+      if(available.length<count)return 'No quedan clústeres libres.';
+      const chunks=count?Array.from({length:count},(_,i)=>text.slice(Math.floor(i*text.length/count),Math.floor((i+1)*text.length/count))):[];
+      available.forEach((c,i)=>{c.used=true;c.owner=id;c.content=chunks[i]||'';c.remnant=false});
+      state.records[id]={name,system:false,text,bytes,external,clusters:available.map(c=>c.id),links:1};
+      state.entries.push({name,record:id});
+      if(!silent){state.missions.create=true;state.missions[external?'external':'resident']=true;selected={type:'record',id};setTrace(['Nombre en directorio',`Registro MFT #${id}`,external?'Clústeres '+available.map(c=>c.id).join(', '):'$DATA dentro del registro'],`Se creó ${name}. El contenido ${external?'se guarda en clústeres externos':'es residente en el registro MFT'}.`);render()}
+      return null;
+    }
+    function createLink(name,target){
+      name=name.trim();if(!validName(name))return 'Nombre inválido para el enlace.';
+      if(state.entries.some(e=>e.name.toLowerCase()===name.toLowerCase()))return 'Ya existe ese nombre.';
+      const entry=state.entries.find(e=>e.name===target);if(!entry)return 'No existe el archivo de origen.';
+      state.entries.push({name,record:entry.record});state.records[entry.record].links++;
+      state.missions.link=true;selected={type:'record',id:entry.record};
+      setTrace([`Nuevo nombre: ${name}`,`Mismo registro #${entry.record}`,'Mismos datos'],`${target} y ${name} apuntan al mismo registro MFT. No se ha copiado el contenido.`);render();return null;
+    }
+    function readFile(name){
+      const entry=state.entries.find(e=>e.name===name);if(!entry)return;
+      const r=state.records[entry.record];
+      selected={type:'record',id:entry.record};
+      state.missions[r.external?'external':'resident']=true;
+      setTrace([`Directorio: ${name}`,`MFT #${entry.record}`,r.external?'Clústeres '+r.clusters.join(', '):'$DATA residente'],r.external?`La MFT indica dónde encontrar los ${r.clusters.length} clústeres del archivo.`:'El contenido cabe en el atributo $DATA del propio registro MFT.');
+      $('readoutTitle').textContent=`Contenido leído: ${name}`;
+      $('readoutSource').textContent=r.external
+        ? `Origen: clúster${r.clusters.length>1?'es':''} ${r.clusters.map(n=>'#'+n).join(', ')} señalado${r.clusters.length>1?'s':''} por $DATA en MFT #${entry.record}.`
+        : `Origen: atributo $DATA residente dentro de MFT #${entry.record}.`;
+      $('readoutContent').textContent=(r.external?r.clusters.map(n=>state.clusters[n].content).join(''):r.text)||'(archivo vacío)';
+      $('readout').hidden=false;
+      render();
+      $('tracePanel').scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    function deleteFile(name){const i=state.entries.findIndex(e=>e.name===name);if(i<0)return;const id=state.entries[i].record,r=state.records[id];state.entries.splice(i,1);r.links--;
+      if(r.links===0){r.clusters.forEach(n=>{const c=state.clusters[n];c.used=false;c.owner=null;c.remnant=true});delete state.records[id];state.missions.delete=true;setTrace([`Quitar ${name}`,`Liberar registro #${id}`,'Liberar clústeres'],`Ya no quedan nombres para ese registro. El simulador marca libres el registro y sus clústeres.`)}
+      else setTrace([`Quitar ${name}`,`Registro #${id} sigue en uso`,'Datos conservados'],`Quedan ${r.links} nombre(s) para el mismo registro; los datos siguen disponibles.`);
+      selected={type:'record',id:5};render();
+    }
+    function render(){
+      $('directoryRows').innerHTML=state.entries.map(e=>`<tr><td><strong>${escapeHtml(e.name)}</strong></td><td><button class="small" data-select-record="${e.record}">#${e.record}</button></td><td><button class="small" data-read="${escapeHtml(e.name)}">Leer</button> <button class="small danger" data-delete="${escapeHtml(e.name)}">Borrar</button></td></tr>`).join('');
+      $('mftGrid').innerHTML=RECORD_IDS.map(id=>{const r=state.records[id],kind=!r?'free':r.system?'system':r.external?'external':'resident';return `<button class="record ${kind} ${selected.type==='record'&&selected.id===id?'active':''}" data-select-record="${id}"><strong>#${id} ${r?escapeHtml(r.name):'Libre'}</strong><small>${r?r.system?'Metarchivo / directorio':r.external?'$DATA → clústeres '+r.clusters.join(', '):'$DATA residente':'Registro disponible'}</small></button>`}).join('');
+      $('clusterGrid').innerHTML=state.clusters.map(c=>`<button class="cluster ${c.used?'used':'free'} ${c.remnant&&!c.used?'remnant':''} ${selected.type==='cluster'&&selected.id===c.id?'active':''} ${selected.type==='record'&&c.used&&c.owner===selected.id?'linked':''}" data-select-cluster="${c.id}"><strong>Clúster #${c.id}</strong><small>${c.used?'1 · MFT #'+c.owner:c.remnant?'0 · libre · residual':'0 · libre'}</small></button>`).join('');
+      const occupied=state.clusters.filter(c=>c.used).length,records=RECORD_IDS.slice(3).filter(id=>state.records[id]).length;
+      $('stats').innerHTML=`<span class="stat">Registros de usuario: <strong>${records}/9</strong></span><span class="stat">Clústeres ocupados: <strong>${occupied}/${CLUSTER_COUNT}</strong></span><span class="stat">Clústeres libres: <strong>${CLUSTER_COUNT-occupied}</strong></span>`;
+      renderDetail();renderMissions();
+    }
+    function renderDetail(){
+      if(selected.type==='cluster'){
+        const c=state.clusters[selected.id];$('detailTitle').textContent=`Clúster #${c.id}`;
+        $('detail').innerHTML=`<p><span class="tag ${c.used?'blue':c.remnant?'rose':''}">${c.used?'Ocupado (1)':c.remnant?'Libre (0), con residuo':'Libre (0)'}</span></p><p>${c.used?`Pertenece al registro <button class="small" data-select-record="${c.owner}">#${c.owner}</button>.`:c.remnant?'Se ha liberado; el ejemplo conserva el contenido hasta reutilizarlo.':'Disponible para otro archivo.'}</p>${c.content?`<p><strong>Contenido de ejemplo:</strong> ${escapeHtml(c.content)}</p>`:''}`;return;
+      }
+      const id=selected.id,r=state.records[id];$('detailTitle').textContent=`Registro MFT #${id}`;
+      if(!r){$('detail').innerHTML='<p>Registro libre. NTFS podría reutilizarlo para otro archivo.</p>';return}
+      if(r.system){$('detail').innerHTML=`<p><strong>${escapeHtml(r.name)}</strong> es ${id===0?'la propia tabla maestra de archivos':id===5?'el directorio raíz del volumen':'el mapa de clústeres ocupados ($Bitmap)'}.</p><p class="hint">Estos registros especiales se simplifican en el dibujo.</p>`;return}
+      $('detail').innerHTML=`<p><span class="tag green">$FILE_NAME</span> ${namesFor(id).map(escapeHtml).join(', ')}</p><p><span class="tag blue">$DATA</span> ${r.external?'No residente: señala los clústeres '+r.clusters.map(n=>`<button class="small" data-select-cluster="${n}">#${n}</button>`).join(' '):'Residente: contenido dentro del registro'}</p><p><strong>Tamaño real del texto:</strong> ${r.bytes} bytes · <strong>Nombres:</strong> ${r.links}</p><p><strong>Contenido de ejemplo:</strong> ${escapeHtml(r.text)||'(vacío)'}</p><p class="hint">El umbral de 80 bytes es didáctico. En NTFS real depende del espacio disponible dentro del registro y de sus atributos.</p>`;
+    }
+    function renderMissions(){const tasks=[['create','Crea un archivo nuevo.'],['resident','Lee o crea un archivo con $DATA residente.'],['external','Lee o crea un archivo que use clústeres.'],['link','Crea un enlace duro y comprueba que comparte registro.'],['delete','Borra el último nombre de un archivo y observa qué se libera.']];$('score').textContent=`${tasks.filter(([k])=>state.missions[k]).length}/${tasks.length}`;$('missions').innerHTML=tasks.map(([k,t],i)=>`<div class="mission ${state.missions[k]?'done':''}"><b>${state.missions[k]?'✓':i+1+'.'}</b><span>${t}</span></div>`).join('')}
+    function openForm(mode){formMode=mode;$('formTitle').textContent=mode==='create'?'Crear archivo':'Crear enlace duro';$('formHelp').textContent=mode==='create'?'Decide si el contenido cabe en la MFT o necesita clústeres.':'Añade un segundo nombre a un registro existente.';$('createFields').hidden=mode!=='create';$('linkFields').hidden=mode!=='link';$('fileName').value='';$('fileText').value='';$('forceExternal').checked=false;$('clusterCount').value='1';$('formError').textContent='';$('linkTarget').innerHTML=state.entries.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)} (MFT #${e.record})</option>`).join('');if(mode==='link'&&!state.entries.length){setTrace(['Enlace duro'],'Primero crea un archivo para poder enlazarlo.');return}$('formModal').hidden=false;$('fileName').focus()}
+    function closeForm(){$('formModal').hidden=true}
+    document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.open)openForm(b.dataset.open);else if(b.dataset.selectRecord!==undefined){selected={type:'record',id:Number(b.dataset.selectRecord)};render()}else if(b.dataset.selectCluster!==undefined){selected={type:'cluster',id:Number(b.dataset.selectCluster)};render()}else if(b.dataset.read)readFile(b.dataset.read);else if(b.dataset.delete)deleteFile(b.dataset.delete)});
+    $('fileForm').addEventListener('submit',e=>{e.preventDefault();const error=formMode==='create'?createFile($('fileName').value,$('fileText').value,$('forceExternal').checked,false,Number($('clusterCount').value)):createLink($('fileName').value,$('linkTarget').value);if(error)$('formError').textContent=error;else closeForm()});
+    $('cancelForm').onclick=closeForm;$('formModal').addEventListener('click',e=>{if(e.target===$('formModal'))closeForm()});$('reset').onclick=()=>{if(confirm('¿Formatear el disco de ejemplo y reiniciar los retos?'))reset()};
+
+    // Lámina guiada independiente del estado del disco: siempre compara los mismos dos ejemplos.
+    const GUIDE={
+      resident:{name:'nota.txt',record:'#16',attribute:'$DATA residente: el texto cabe aquí',clusters:'No se necesitan para este archivo',steps:[
+        ['Localiza el nombre','En el directorio raíz aparece nota.txt. Su entrada señala el registro MFT #16.'],
+        ['Abre el registro MFT','El registro #16 reúne los atributos del archivo, incluido $FILE_NAME.'],
+        ['Lee $DATA','El contenido de nota.txt cabe en el atributo $DATA del propio registro. Se llama dato residente.'],
+        ['Compara el resultado','El recorrido termina en la MFT: para este contenido no hay que seguir hasta clústeres externos.']
+      ]},
+      external:{name:'foto.bmp',record:'#17',attribute:'$DATA no residente: indica dónde están los datos',clusters:'Clúster #0 en este disco de ejemplo',steps:[
+        ['Localiza el nombre','En el directorio raíz aparece foto.bmp. Su entrada señala el registro MFT #17.'],
+        ['Abre el registro MFT','El registro #17 contiene los atributos del archivo y describe dónde está su contenido.'],
+        ['Sigue $DATA','Aquí $DATA es no residente: el registro guarda la referencia a los clústeres de datos.'],
+        ['Llega al clúster','NTFS consulta el clúster señalado y lee allí el contenido de foto.bmp. $Bitmap lo marca como ocupado.']
+      ]}
+    };
+    let guideCase='resident',guideStep=0;
+    function renderGuide(){
+      const example=GUIDE[guideCase],current=guideStep;
+      $('diagramName').textContent=`${example.name} → MFT ${example.record}`;
+      $('diagramRecord').textContent=`${example.record} · $FILE_NAME + $DATA`;
+      $('diagramAttribute').textContent=example.attribute;
+      $('diagramClusterText').textContent=example.clusters;
+      ['diagramDirectory','diagramMft','diagramData','diagramClusters'].forEach((id,i)=>{
+        const el=$(id),lit=i<=current && !(guideCase==='resident'&&i===3);
+        el.classList.toggle('lit',lit);el.classList.toggle('current',i===current&&lit);
+        el.classList.toggle('skipped',guideCase==='resident'&&i===3);
+      });
+      ['arrowOne','arrowTwo','arrowThree'].forEach((id,i)=>$(id).classList.toggle('lit',i<current && !(guideCase==='resident'&&i===2)));
+      $('guideStepTitle').textContent=example.steps[current][0];
+      $('guideStepText').textContent=example.steps[current][1];
+      $('guideProgress').textContent=`Paso ${current+1} de 4`;
+      $('guideBack').disabled=current===0;
+      $('guideNext').textContent=current===3?'Repetir ↺':'Siguiente →';
+      $('guideResident').setAttribute('aria-pressed',guideCase==='resident');
+      $('guideExternal').setAttribute('aria-pressed',guideCase==='external');
+      $('guideResident').classList.toggle('secondary',guideCase!=='resident');
+      $('guideExternal').classList.toggle('secondary',guideCase!=='external');
+    }
+    $('guideResident').onclick=()=>{guideCase='resident';guideStep=0;renderGuide()};
+    $('guideExternal').onclick=()=>{guideCase='external';guideStep=0;renderGuide()};
+    $('guideBack').onclick=()=>{if(guideStep>0){guideStep--;renderGuide()}};
+    $('guideNext').onclick=()=>{guideStep=(guideStep+1)%4;renderGuide()};
+    renderGuide();
+
+    const VOLUME_HELP={
+      pbs:['PBS · Sector de arranque de la partición','Guarda información para interpretar este volumen NTFS, como el tamaño de clúster y la ubicación inicial de la MFT. No es lo mismo que el MBR o la tabla de particiones del disco.'],
+      mft:['MFT · Tabla maestra de archivos','Es el índice central de NTFS. Sus registros describen archivos y directorios mediante atributos como $FILE_NAME y $DATA.'],
+      metadata:['Metadatos del sistema','NTFS usa archivos especiales: $Bitmap indica qué clústeres están ocupados y $LogFile registra operaciones para ayudar a mantener la coherencia. La MFT también es un metarchivo.'],
+      user:['Datos y directorios','Los directorios permiten localizar nombres. El contenido no residente de los archivos se guarda en clústeres; el registro MFT indica cuáles corresponden a cada archivo.']
+    };
+    document.querySelectorAll('[data-volume]').forEach(button=>button.addEventListener('click',()=>{
+      document.querySelectorAll('[data-volume]').forEach(card=>card.setAttribute('aria-pressed',card===button));
+      const [title,description]=VOLUME_HELP[button.dataset.volume];
+      $('volumeDetailTitle').textContent=title;$('volumeDetailText').textContent=description;
+    }));
+
+    const TOUR=[['volumePanel','El mapa del volumen','Estas cuatro cajas resumen las partes de NTFS. Pasa el ratón o pulsa cada una para ver su función.'],['guidePanel','Mira el recorrido','Esta lámina compara un archivo residente con otro que usa clústeres. Avanza sus cuatro pasos cuando termine el tour.'],['actionsPanel','Empieza con una acción','Crea un archivo o un enlace duro. También puedes leer y borrar desde el directorio.'],['directoryPanel','Busca el nombre','El directorio raíz conecta cada nombre con un número de registro de la MFT.'],['mftPanel','Abre la MFT','Cada registro contiene atributos. $FILE_NAME guarda nombres y $DATA describe el contenido.'],['detailPanel','Inspecciona el registro','En un archivo pequeño, $DATA puede ser residente: el contenido cabe en el propio registro.'],['clustersPanel','Sigue los clústeres','Si $DATA no es residente, el registro señala clústeres. $Bitmap distingue los ocupados (1) de los libres (0).'],['tracePanel','Lee el contenido','Pulsa Leer sobre nota.txt y foto.bmp. Aquí verás el texto recuperado y de dónde lo ha leído NTFS.']];
+    let tourIndex=-1,tourFocus=null,previousFocus=null;
+    function placeTour(){if(tourIndex<0)return;const card=$('tourCard'),box=tourFocus.getBoundingClientRect(),w=card.offsetWidth,h=card.offsetHeight;let top=box.bottom+12,left=Math.max(16,Math.min(box.left,innerWidth-w-16));if(top+h>innerHeight-16)top=box.top-h-12;if(top<16){top=Math.max(16,(innerHeight-h)/2);left=Math.max(16,(innerWidth-w)/2)}card.style.top=top+'px';card.style.left=left+'px'}
+    function showTour(i){tourFocus?.classList.remove('tour-focus');tourIndex=i;const [id,title,text]=TOUR[i];tourFocus=$(id);tourFocus.scrollIntoView({behavior:'instant',block:'center'});tourFocus.classList.add('tour-focus');$('tourCount').textContent=`Paso ${i+1} de ${TOUR.length}`;$('tourTitle').textContent=title;$('tourText').textContent=text;$('tourBack').disabled=i===0;$('tourNext').textContent=i===TOUR.length-1?'Empezar ✓':'Siguiente →';requestAnimationFrame(()=>{placeTour();$('tourNext').focus()})}
+    function startTour(){closeForm();previousFocus=document.activeElement;$('tourShade').hidden=false;$('tourCard').hidden=false;document.body.style.overflow='hidden';showTour(0)}
+    function endTour(){tourFocus?.classList.remove('tour-focus');tourFocus=null;tourIndex=-1;$('tourShade').hidden=true;$('tourCard').hidden=true;document.body.style.overflow='';previousFocus?.focus();try{localStorage.setItem('s12-tour-seen','1')}catch(_){}}
+    $('startTour').onclick=startTour;$('tourExit').onclick=endTour;$('tourBack').onclick=()=>{if(tourIndex>0)showTour(tourIndex-1)};$('tourNext').onclick=()=>{if(tourIndex===TOUR.length-1)endTour();else showTour(tourIndex+1)};window.addEventListener('resize',placeTour);document.addEventListener('keydown',e=>{if(tourIndex>=0){if(e.key==='Escape')endTour();if(e.key==='ArrowRight')$('tourNext').click();if(e.key==='ArrowLeft')$('tourBack').click()}else if(e.key==='Escape')closeForm()});
+    reset();try{if(!localStorage.getItem('s12-tour-seen'))startTour()}catch(_){startTour()}
+  </script>
+</body>
+</html>

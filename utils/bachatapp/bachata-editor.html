@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bachata · Editor de tiempos</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8edf5;background:#0c1424}*{box-sizing:border-box}body{margin:0;padding:24px}main{max-width:1100px;margin:auto}h1{margin:0 0 6px;font-size:28px}p{color:#a9b7cd}section{background:#162238;border:1px solid #293a54;border-radius:16px;padding:18px;margin-top:16px}button,input,select{font:inherit}button{background:#324663;border:1px solid #526580;color:white;padding:10px 13px;border-radius:9px;cursor:pointer}button:hover{filter:brightness(1.15)}button.primary{background:#147d6a;border-color:#22a58e}button.danger{background:#733745}button:disabled{opacity:.45;cursor:default}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.grow{flex:1}.small{font-size:13px;color:#a9b7cd}input[type=file]{max-width:100%}input[type=range]{accent-color:#30c7ac}#beat{font-size:clamp(75px,16vw,150px);font-weight:800;text-align:center;line-height:1.1;color:#40d8b8}#beatInfo{text-align:center;color:#9bacc6;min-height:24px}.timeline{position:relative;border:1px solid #41516b;border-radius:10px;overflow:hidden;background:#0b172a;touch-action:none}canvas{width:100%;height:160px;display:block;cursor:crosshair}#ruler{height:24px;position:relative;color:#9baec7;font-size:11px}.markerList{max-height:230px;overflow:auto}.marker{display:grid;grid-template-columns:1fr 105px 110px 125px 90px;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #293a54}.marker input{width:100%;background:#0c1728;border:1px solid #42516a;border-radius:6px;color:white;padding:7px}.marker select{width:100%;background:#0c1728;border:1px solid #42516a;border-radius:6px;color:white;padding:7px}label{display:inline-flex;gap:7px;align-items:center}#status{min-height:20px;color:#94e6d3}.tip{background:#1c3143;border-left:3px solid #30c7ac;padding:10px;border-radius:5px}.hidden{display:none}@media(max-width:600px){body{padding:12px}.marker{grid-template-columns:1fr 75px 85px 85px 55px;gap:4px}.marker button{padding:7px 4px}.marker input,.marker select{font-size:12px}}
+</style></head><body><main>
+<h1>🎵 Bachata · Editor de tiempos</h1><p>Sincroniza los pasos 1–8 (o 1–4) con tu canción. Todo se procesa en tu navegador.</p>
+<p><a href="bachata-reproductor.html" style="color:#40d8b8">← Ir al reproductor</a></p>
+<section><div class="row"><label>🎧 Cargar MP3 <input id="audioFile" type="file" accept="audio/*,.mp3"></label><button id="importBtn">Importar JSON</button><input id="jsonFile" class="hidden" type="file" accept=".json,application/json"><button id="exportBtn" class="primary">Exportar JSON</button></div><p id="fileName" class="small">Ningún audio cargado</p><audio id="audio" preload="metadata"></audio></section>
+<section><div id="beat">—</div><div id="beatInfo">Carga una canción para empezar</div><div class="row" style="justify-content:center;margin-top:16px"><button id="back">↶ 5 s</button><button id="play" class="primary">▶ Reproducir</button><button id="forward">5 s ↷</button><label>Velocidad <select id="speed"><option value="0.5">0,5×</option><option value="0.75">0,75×</option><option value="1" selected>1×</option><option value="1.25">1,25×</option></select></label><label><input id="voice" type="checkbox"> Voz</label></div><div class="row" style="margin-top:15px"><span id="current">00:00.000</span><input id="seek" class="grow" type="range" min="0" max="1000" value="0"><span id="duration">00:00.000</span></div></section>
+<section><div class="row"><strong>Forma de onda y marcadores «1»</strong><span class="small">Haz clic para situar el cursor; arrastra un marcador verde para ajustarlo.</span></div><div class="row" style="margin:12px 0"><button id="mark" class="primary">＋ Marcar 1 aquí (M)</button><label>Zoom <input id="zoom" type="range" min="1" max="16" step="1" value="1"></label><label>Desplazamiento <input id="pan" type="range" min="0" max="1000" value="0"></label></div><div class="timeline"><canvas id="wave"></canvas><div id="ruler"></div></div><p class="small">Atajos: espacio = reproducir/pausar; M = marcar 1. Las marcas se pueden ajustar también en la tabla con precisión de milisegundos.</p><div class="tip small">El conteo empieza en el primer «1». Marca los dos primeros para calcular la duración de una vuelta. Puedes indicar los segundos de una vuelta completa en cada marca; si dejas el campo vacío, se conserva el ritmo anterior. Cada nueva marca reinicia el «1» sin ralentizar los tiempos intermedios. Elige 4 u 8 tiempos por vuelta.</div></section>
+<section><div class="row"><strong>Marcadores</strong><span class="small">Segundos por vuelta: vacío = automático</span><span id="count" class="small">0 marcas</span><button id="clear" class="danger" style="margin-left:auto">Borrar todos</button></div><div class="markerList" id="markers"></div></section>
+<p id="status" role="status"></p>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),audio=$('audio'),canvas=$('wave'),ctx=canvas.getContext('2d');
+let markers=[],samples=null,dragId=null,dragged=false,lastSpoken=null,audioName='',objectUrl=null,uid=0;
+const fmt=t=>{t=Math.max(0,Number(t)||0);let m=Math.floor(t/60),s=Math.floor(t%60),ms=Math.floor((t%1)*1000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`};
+const status=s=>$('status').textContent=s;
+const sorted=()=>markers.sort((a,b)=>a.time-b.time);
+const dur=()=>Number.isFinite(audio.duration)?audio.duration:0;
+function range(){let d=dur()||1,z=+$('zoom').value,span=d/z,start=(d-span)*(+$('pan').value/1000);return {start,span,d}}
+function xToTime(x){let r=range();return Math.max(0,Math.min(r.d,r.start+x/canvas.clientWidth*r.span))}
+function timeToX(t){let r=range();return (t-r.start)/r.span*canvas.clientWidth}
+function renderWave(){
+ const w=canvas.clientWidth,h=160,dpr=window.devicePixelRatio||1;if(!w)return;
+ canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ ctx.fillStyle='#0b172a';ctx.fillRect(0,0,w,h);
+ const r=range();ctx.strokeStyle='#203850';ctx.lineWidth=1;
+ for(let i=0;i<=10;i++){let x=i*w/10;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ if(samples){ctx.fillStyle='#579bc4';let n=samples.length;for(let x=0;x<w;x+=2){let a=Math.floor((r.start+x/w*r.span)/r.d*n),b=Math.floor((r.start+(x+2)/w*r.span)/r.d*n);a=Math.max(0,Math.min(n-1,a));b=Math.max(a+1,Math.min(n,b));let peak=0;for(let j=a;j<b;j++)peak=Math.max(peak,samples[j]);ctx.fillRect(x,80-peak*72,1.7,peak*144)}}
+ sorted();markers.forEach((m,i)=>{let x=timeToX(m.time);if(x<0||x>w)return;ctx.strokeStyle='#36d2a9';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();ctx.fillStyle='#13876f';ctx.fillRect(x-10,0,20,22);ctx.fillStyle='white';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('1',x,16)});
+ let x=timeToX(audio.currentTime);if(x>=0&&x<=w){ctx.strokeStyle='#ffab54';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ $('ruler').innerHTML='';for(let i=0;i<=5;i++){let t=r.start+i*r.span/5,el=document.createElement('span');el.style.cssText=`position:absolute;left:${i*20}%;transform:translateX(-50%)`;el.textContent=fmt(t).slice(0,5);$('ruler').append(el)}
+}
+function cycleAt(ms,i){
+ if(ms[i].cycle>0)return ms[i].cycle;
+ if(i===0&&ms.length>1)return ms[1].time-ms[0].time;
+ for(let j=i-1;j>=0;j--)if(ms[j].cycle>0)return ms[j].cycle;
+ return ms.length>1?ms[1].time-ms[0].time:0;
+}
+function beatAt(t){
+ if(!markers.length)return null;
+ const ms=sorted();if(t<ms[0].time)return null;
+ let i=ms.length-1;while(i>0&&t<ms[i].time)i--;
+ let cycle=cycleAt(ms,i),steps=ms[i].steps;
+ if(cycle<=0)return {beat:1,phase:0,source:'Añade otra marca o indica la duración de una vuelta'};
+ let interval=cycle/steps,raw=Math.floor((t-ms[i].time)/interval+1e-7),index=((raw%steps)+steps)%steps;
+ return {beat:index+1,phase:(t-ms[i].time)/interval,source:`Vuelta de ${steps} tiempos · ${cycle.toFixed(3)} s · ${Math.round(60/interval)} pulsos/min`};
+}
+function refresh(){
+ let b=beatAt(audio.currentTime);$('beat').textContent=b?b.beat:'—';$('beatInfo').textContent=b?b.source:'Marca dos tiempos «1» para sincronizar';
+ $('current').textContent=fmt(audio.currentTime);$('duration').textContent=fmt(dur());$('seek').value=dur()?Math.round(audio.currentTime/dur()*1000):0;
+ if($('voice').checked&&b&&markers.length>=2&&b.beat!==lastSpoken){speak(b.beat)}
+ lastSpoken=b?b.beat:null;renderWave();
+}
+function speak(n){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(String(n));u.lang='es-ES';u.rate=1.4;u.volume=.9;window.speechSynthesis.speak(u)}
+function redrawMarkers(){
+ sorted();$('count').textContent=`${markers.length} marcas`;$('markers').replaceChildren();
+ markers.forEach((m,i)=>{let row=document.createElement('div');row.className='marker';
+ let title=document.createElement('span');title.textContent=`1 · Marca ${i+1}`;let inp=document.createElement('input');inp.type='number';inp.min=0;inp.max=dur()||99999;inp.step=.001;inp.value=m.time.toFixed(3);inp.title='Segundo exacto';inp.onchange=()=>{let v=Number(inp.value);if(Number.isFinite(v)&&v>=0&&(!dur()||v<=dur())){m.time=v;sorted();redrawMarkers();refresh()}else inp.value=m.time.toFixed(3)};
+ let sel=document.createElement('select');for(let n of [8,4]){let opt=document.createElement('option');opt.value=n;opt.textContent=`${n} tiempos`;sel.append(opt)}sel.value=m.steps;sel.title='Tiempos de cada vuelta desde esta marca';sel.onchange=()=>{m.steps=+sel.value;refresh()};
+ let cycle=document.createElement('input');cycle.type='number';cycle.min=.001;cycle.step=.001;cycle.placeholder='Auto';cycle.value=m.cycle>0?m.cycle.toFixed(3):'';cycle.title=`Segundos de una vuelta completa desde esta marca (automático: ${cycleAt(markers,i).toFixed(3)} s)`;cycle.setAttribute('aria-label','Segundos por vuelta desde esta marca');cycle.onchange=()=>{let v=cycle.value.trim()===''?null:Number(cycle.value);if(v===null||Number.isFinite(v)&&v>0){m.cycle=v;redrawMarkers();refresh()}else cycle.value=m.cycle>0?m.cycle.toFixed(3):''};
+ let del=document.createElement('button');del.textContent='Borrar';del.className='danger';del.onclick=()=>{markers=markers.filter(v=>v.id!==m.id);redrawMarkers();refresh()};
+ row.append(title,inp,sel,cycle,del);$('markers').append(row)});
+}
+function addMark(t){if(!dur()){status('Primero carga una canción.');return}if(markers.some(m=>Math.abs(m.time-t)<.02)){status('Ya existe una marca prácticamente en ese instante.');return}let ms=sorted(),previous=ms.filter(m=>m.time<t).at(-1);markers.push({id:++uid,time:t,steps:previous?.steps??8,cycle:null});redrawMarkers();refresh();status(`Marca 1 añadida en ${fmt(t)}`)}
+async function loadAudio(file){if(!file)return;audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(file);audio.src=objectUrl;audioName=file.name;$('fileName').textContent=file.name;markers=[];samples=null;lastSpoken=null;redrawMarkers();status('Cargando forma de onda…');renderWave();
+ try{let buffer=await file.arrayBuffer(),ac=new (window.AudioContext||window.webkitAudioContext)(),decoded=await ac.decodeAudioData(buffer);let data=decoded.getChannelData(0),size=12000,block=Math.max(1,Math.ceil(data.length/size)),out=new Float32Array(Math.ceil(data.length/block));for(let i=0;i<out.length;i++){let peak=0;for(let j=i*block;j<Math.min(data.length,(i+1)*block);j+=4)peak=Math.max(peak,Math.abs(data[j]));out[i]=peak}samples=out;await ac.close();status('Audio cargado. Reproduce y pulsa «Marcar 1» al escuchar el primer tiempo.')}catch(e){status('Audio cargado. No se pudo analizar la forma de onda, pero puedes marcar tiempos igualmente.')}refresh()}
+$('audioFile').onchange=e=>loadAudio(e.target.files[0]);
+audio.onloadedmetadata=refresh;audio.onplay=()=>{$('play').textContent='⏸ Pausar'};audio.onpause=()=>{$('play').textContent='▶ Reproducir';window.speechSynthesis?.cancel()};audio.onseeked=()=>{lastSpoken=null;refresh()};
+function toggle(){if(!audio.src){status('Carga un MP3 primero.');return}if(audio.paused)audio.play().catch(()=>status('El navegador no ha podido reproducir el audio.'));else audio.pause()}
+$('play').onclick=toggle;$('back').onclick=()=>audio.currentTime=Math.max(0,audio.currentTime-5);$('forward').onclick=()=>audio.currentTime=Math.min(dur(),audio.currentTime+5);
+$('seek').oninput=e=>{if(dur())audio.currentTime=e.target.value/1000*dur()};$('speed').onchange=e=>audio.playbackRate=+e.target.value;$('mark').onclick=()=>addMark(audio.currentTime);
+$('zoom').oninput=renderWave;$('pan').oninput=renderWave;
+$('clear').onclick=()=>{if(markers.length&&confirm('¿Borrar todos los marcadores?')){markers=[];redrawMarkers();refresh()}};
+canvas.addEventListener('pointerdown',e=>{let rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left;let hit=markers.find(m=>Math.abs(timeToX(m.time)-x)<12);dragId=hit?.id??null;dragged=false;canvas.setPointerCapture(e.pointerId);if(dragId===null&&dur())audio.currentTime=xToTime(x)});
+canvas.addEventListener('pointermove',e=>{if(dragId===null||!canvas.hasPointerCapture(e.pointerId))return;let rect=canvas.getBoundingClientRect(),m=markers.find(v=>v.id===dragId);if(m){m.time=xToTime(e.clientX-rect.left);dragged=true;renderWave()}});
+canvas.addEventListener('pointerup',()=>{if(dragId!==null&&dragged){redrawMarkers();refresh()}dragId=null});
+$('exportBtn').onclick=()=>{if(!audioName){status('Carga un audio antes de exportar.');return}let data={version:2,title:audioName.replace(/\.[^.]+$/,''),audio:audioName,markers:sorted().map(m=>({time:+m.time.toFixed(3),beat:1,steps:m.steps,cycle:m.cycle}))},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=data.title+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('JSON exportado. Guarda el archivo junto al MP3.')};
+$('importBtn').onclick=()=>$('jsonFile').click();$('jsonFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let data=JSON.parse(await f.text());if(!Array.isArray(data.markers))throw Error('Sin marcadores');let next=data.markers.map(m=>({id:++uid,time:Number(m.time),steps:Number(m.steps??8),cycle:m.cycle==null?null:Number(m.cycle)}));if(next.some(m=>!Number.isFinite(m.time)||m.time<0||![4,8].includes(m.steps)||m.cycle!==null&&(!Number.isFinite(m.cycle)||m.cycle<=0)))throw Error('Marcas inválidas');markers=next;redrawMarkers();refresh();status(`Importadas ${markers.length} marcas. Audio asociado: ${data.audio||'no indicado'}.`)}catch(err){status('No se pudo importar: '+err.message)}e.target.value=''};
+$('voice').onchange=()=>{lastSpoken=null;if(!$('voice').checked)window.speechSynthesis?.cancel()};
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();toggle()}else if(e.key.toLowerCase()==='m'){e.preventDefault();addMark(audio.currentTime)}});
+function tick(){refresh();requestAnimationFrame(tick)}new ResizeObserver(renderWave).observe(canvas);redrawMarkers();tick();
+})();
+</script></body></html>

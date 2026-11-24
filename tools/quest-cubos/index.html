@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07111f" />
+    <title>Laboratorio de cubos · Meta Quest 3S</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
+    <script src="app.js"></script>
+  </head>
+  <body>
+    <main id="landing" aria-label="Inicio del experimento WebXR">
+      <p class="eyebrow">Experimento WebXR mínimo</p>
+      <h1>Laboratorio de cubos</h1>
+      <p class="intro">
+        Mira tu habitación a través de las Quest 3S y mueve tres cubos virtuales con los mandos.
+        Todo se ejecuta en las gafas.
+      </p>
+      <div id="status" class="status" role="status">Comprobando compatibilidad…</div>
+      <ol>
+        <li>Pulsa <strong>Entrar en realidad mixta</strong>.</li>
+        <li>Apunta a un cubo con el láser.</li>
+        <li>Mantén el gatillo para moverlo y suelta para dejarlo.</li>
+      </ol>
+      <p class="hint">Botón A o X: reiniciar los cubos.</p>
+    </main>
+
+    <a-scene
+      id="scene"
+      embedded
+      renderer="alpha: true; antialias: true; colorManagement: true"
+      background="transparent: true"
+      webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor"
+      xr-mode-ui="XRMode: ar"
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .interactive"
+      reset-experiment
+    >
+      <a-entity id="rig">
+        <a-camera position="0 1.6 0" look-controls="pointerLockEnabled: false"></a-camera>
+      </a-entity>
+
+      <a-entity
+        id="leftHand"
+        laser-controls="hand: left"
+        raycaster="objects: .interactive; far: 8; lineColor: #76e4f7; lineOpacity: 0.85"
+        controller-grab
+      ></a-entity>
+      <a-entity
+        id="rightHand"
+        laser-controls="hand: right"
+        raycaster="objects: .interactive; far: 8; lineColor: #76e4f7; lineOpacity: 0.85"
+        controller-grab
+      ></a-entity>
+
+      <a-entity id="objects">
+        <a-box
+          id="cube-coral"
+          class="interactive"
+          position="-0.62 1.28 -1.8"
+          rotation="0 18 0"
+          width="0.34" height="0.34" depth="0.34"
+          material="color: #ff6b6b; roughness: 0.35; metalness: 0.08"
+          interactive-cube="palette: #ff6b6b, #ffd166, #fb7185"
+          animation__float="property: position; dir: alternate; dur: 1700; easing: easeInOutSine; loop: true; to: -0.62 1.34 -1.8"
+        ></a-box>
+        <a-box
+          id="cube-mint"
+          class="interactive"
+          position="0 1.38 -1.95"
+          rotation="12 -12 8"
+          width="0.38" height="0.38" depth="0.38"
+          material="color: #34d399; roughness: 0.3; metalness: 0.1"
+          interactive-cube="palette: #34d399, #67e8f9, #a7f3d0"
+          animation__float="property: position; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true; to: 0 1.46 -1.95"
+        ></a-box>
+        <a-box
+          id="cube-blue"
+          class="interactive"
+          position="0.62 1.23 -1.8"
+          rotation="-8 25 -5"
+          width="0.32" height="0.32" depth="0.32"
+          material="color: #60a5fa; roughness: 0.28; metalness: 0.12"
+          interactive-cube="palette: #60a5fa, #a78bfa, #22d3ee"
+          animation__float="property: position; dir: alternate; dur: 1850; easing: easeInOutSine; loop: true; to: 0.62 1.3 -1.8"
+        ></a-box>
+      </a-entity>
+
+      <a-entity
+        id="xrInstructions"
+        position="0 1.82 -2.25"
+        text="value: APUNTA + GATILLO PARA MOVER\nA / X PARA REINICIAR; align: center; color: #ffffff; width: 2.4; wrapCount: 34"
+      ></a-entity>
+
+      <a-light type="ambient" intensity="1.25" color="#dbeafe"></a-light>
+      <a-light type="directional" intensity="0.8" color="#ffffff" position="1 3 1"></a-light>
+    </a-scene>
+  </body>
+</html>

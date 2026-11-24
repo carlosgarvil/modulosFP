@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071112" />
+    <title>El último experimento</title>
+    <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
+    <script src="lab.js"></script>
+    <style>
+      body { margin: 0; background: #071112; font-family: system-ui, sans-serif; color: #e3eee6; }
+      #intro { position: absolute; z-index: 5; left: 5%; top: 5%; max-width: 460px; padding: 26px; background: #071112ee; border: 1px solid #85ad89; border-radius: 12px; }
+      h1 { font-family: Georgia, serif; font-size: 36px; }
+      button { padding: 14px; border: 0; background: #b1d49a; color: #122114; font-weight: bold; cursor: pointer; }
+      p { line-height: 1.5; }
+      .a-enter-vr { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="intro">
+      <small>ESCAPE ROOM · FRANKENSTEIN</small>
+      <h1>El último experimento</h1>
+      <p>El doctor ha desaparecido. Busca dos notas en el laboratorio, descubre el orden de los símbolos y activa la máquina para abrir la salida.</p>
+      <p>Apunta y pulsa el gatillo para investigar. Los círculos del suelo permiten desplazarte sin caminar. Con ratón: arrastra para mirar y haz clic para interactuar.</p>
+      <button id="start">Entrar al laboratorio VR</button>
+      <button id="desktop">Ver en pantalla</button>
+      <p id="status">Necesitas HTTPS y Meta Quest Browser para entrar en VR.</p>
+    </div>
+    <a-scene lab renderer="antialias: true" background="color: #071112" fog="type: exponential; color: #071112; density: 0.035" xr-mode-ui="enabled: false" webxr="requiredFeatures: local-floor">
+      <a-entity id="rig">
+        <a-camera id="camera" position="0 1.6 2.5" wasd-controls="enabled: false"></a-camera>
+        <a-entity laser-controls="hand: left" raycaster="objects: .target; far: 15"></a-entity>
+        <a-entity laser-controls="hand: right" raycaster="objects: .target; far: 15"></a-entity>
+      </a-entity>
+      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .target"></a-entity>
+      <a-light type="ambient" color="#91aaa0" intensity="0.8"></a-light>
+      <a-light type="point" position="0 3 -1" color="#b8edb0" intensity="1.8" distance="12"></a-light>
+    </a-scene>
+  </body>
+</html>

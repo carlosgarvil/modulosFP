@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bachata · Reproductor</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#eef6ff;background:#080e1b}*{box-sizing:border-box}body{margin:0;min-height:100dvh}button,input{font:inherit}button{background:#203650;border:1px solid #42607f;color:#fff;border-radius:12px;padding:11px 17px;cursor:pointer}button:disabled{opacity:.45;cursor:default}button.primary{background:#0c917c;border-color:#35c8ad}.app{min-height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:clamp(10px,2vw,24px)}.top,.controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}.top label{display:inline-flex;align-items:center;gap:8px;border:1px solid #36506b;background:#17263b;padding:9px 12px;border-radius:10px;cursor:pointer}.top input[type=file]{max-width:180px;font-size:12px}.name{font-size:13px;color:#aac0d5;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stage{min-height:0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr);align-items:center;gap:10px;border:1px solid #263c55;border-radius:22px;background:radial-gradient(circle at 70% 45%,#16344c,#0d192b 55%,#0a1323);overflow:hidden}.count{text-align:center;align-self:center}.number{font-size:clamp(170px,36vw,640px);font-weight:900;line-height:.85;letter-spacing:-.08em;color:#47dec1;text-shadow:0 12px 75px #16a68c55}.number.waiting{color:#77899e;text-shadow:none}.countHint{margin-top:16px;font-size:clamp(15px,2vw,24px);color:#b5c8db}.figureWrap{height:min(70vh,700px);min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center}.direction{font-weight:700;font-size:clamp(15px,2vw,24px);letter-spacing:.06em;text-transform:uppercase;color:#b5c8db;min-height:1.3em}.figure{width:min(100%,470px);height:85%;overflow:visible}.fig{--skin:#e3ebf4;--shirt:#6f82dc;--pants:#5a7592;--edge:rgba(8,14,27,.7)}.limb{fill:none;stroke:var(--skin);stroke-linecap:round;stroke-linejoin:round}.leg{stroke:var(--pants);stroke-width:18}.arm{stroke-width:12;filter:drop-shadow(0 0 2px var(--edge))}.sleeve{stroke:var(--shirt);stroke-width:17;filter:drop-shadow(0 0 2px var(--edge))}.neck{stroke-width:14}.torso{fill:var(--shirt);stroke:var(--shirt);stroke-width:10;stroke-linejoin:round}.head{fill:var(--skin)}.foot{stroke:#9fb3c8;stroke-width:12;stroke-linecap:round;transition:stroke .15s}.foot.step{stroke:#47dec1}.foot.tap{stroke:#ffce80}.controls{padding:3px 0 10px}.seek{width:min(760px,80vw);accent-color:#39cdb0}.time{font-variant-numeric:tabular-nums;color:#b5c8db;min-width:58px;text-align:center}.status{width:100%;min-height:20px;text-align:center;font-size:14px;color:#a9c1d5}.small{font-size:13px;color:#a9c1d5}.speed{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#b5c8db}.speed select{font:inherit;background:#203650;border:1px solid #42607f;color:#fff;border-radius:12px;padding:10px 12px;cursor:pointer}@media(max-width:750px){.stage{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(190px,.8fr)}.number{font-size:clamp(150px,38vh,420px)}.figureWrap{height:100%;min-height:170px}.figure{height:80%;max-width:320px}.countHint{margin-top:4px}.top input[type=file]{max-width:125px}}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#eef6ff;background:#080e1b}*{box-sizing:border-box}body{margin:0;min-height:100dvh}button,input{font:inherit}button{background:#203650;border:1px solid #42607f;color:#fff;border-radius:12px;padding:11px 17px;cursor:pointer}button:disabled{opacity:.45;cursor:default}button.primary{background:#0c917c;border-color:#35c8ad}.app{min-height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:clamp(10px,2vw,24px)}.top,.controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}.top label{display:inline-flex;align-items:center;gap:8px;border:1px solid #36506b;background:#17263b;padding:9px 12px;border-radius:10px;cursor:pointer}.top input[type=file]{max-width:180px;font-size:12px}.name{font-size:13px;color:#aac0d5;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stage{min-height:0;display:grid;grid-template-columns:minmax(0,.7fr) minmax(300px,1.6fr);align-items:center;gap:10px;border:1px solid #263c55;border-radius:22px;background:radial-gradient(circle at 70% 45%,#16344c,#0d192b 55%,#0a1323);overflow:hidden}.count{text-align:center;align-self:center}.number{font-size:clamp(150px,25vw,520px);font-weight:900;line-height:.85;letter-spacing:-.08em;color:#47dec1;text-shadow:0 12px 75px #16a68c55}.number.waiting{color:#77899e;text-shadow:none}.countHint{margin-top:16px;font-size:clamp(15px,2vw,24px);color:#b5c8db}.figureWrap{height:min(70vh,700px);min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center}.direction{font-weight:700;font-size:clamp(15px,2vw,24px);letter-spacing:.06em;text-transform:uppercase;color:#b5c8db;min-height:1.3em}.figRow{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;gap:clamp(4px,2vw,32px)}.figure{flex:0 1 470px;min-width:0;height:92%;overflow:visible}.arrow{flex:none;width:clamp(46px,9vw,150px);height:auto;fill:#47dec1;opacity:.08;transition:fill .15s}.arrow.tap{fill:#ffce80}.fig{--skin:#e3ebf4;--shirt:#6f82dc;--pants:#5a7592;--edge:rgba(8,14,27,.7)}.limb{fill:none;stroke:var(--skin);stroke-linecap:round;stroke-linejoin:round}.leg{stroke:var(--pants);stroke-width:18}.arm{stroke-width:12;filter:drop-shadow(0 0 2px var(--edge))}.sleeve{stroke:var(--shirt);stroke-width:17;filter:drop-shadow(0 0 2px var(--edge))}.neck{stroke-width:14}.torso{fill:var(--shirt);stroke:var(--shirt);stroke-width:10;stroke-linejoin:round}.head{fill:var(--skin)}.foot{stroke:#9fb3c8;stroke-width:12;stroke-linecap:round;transition:stroke .15s}.foot.step{stroke:#47dec1}.foot.tap{stroke:#ffce80}.controls{padding:3px 0 10px}.seek{width:min(760px,80vw);accent-color:#39cdb0}.time{font-variant-numeric:tabular-nums;color:#b5c8db;min-width:58px;text-align:center}.status{width:100%;min-height:20px;text-align:center;font-size:14px;color:#a9c1d5}.small{font-size:13px;color:#a9c1d5}.speed{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#b5c8db}.speed select{font:inherit;background:#203650;border:1px solid #42607f;color:#fff;border-radius:12px;padding:10px 12px;cursor:pointer}@media(max-width:750px){.stage{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(190px,.8fr)}.number{font-size:clamp(150px,38vh,420px)}.figureWrap{height:100%;min-height:170px}.figure{height:88%;max-width:320px}.arrow{width:clamp(40px,13vw,90px)}.countHint{margin-top:4px}.top input[type=file]{max-width:125px}}
 </style>
 </head>
 <body>
@@ -18,6 +18,8 @@
  <section class="stage" aria-label="Conteo y pasos">
   <div class="count"><div id="number" class="number waiting" aria-live="off">—</div><div id="countHint" class="countHint">Carga el MP3 y el JSON</div></div>
   <div class="figureWrap"><div id="direction" class="direction">Preparado</div>
+   <div class="figRow">
+   <svg id="arrowL" class="arrow" viewBox="0 0 100 160" aria-hidden="true"><path d="M96 52H46V14L4 80l42 66v-38h50z"/></svg>
    <svg class="figure" viewBox="0 30 400 375" role="img" aria-label="Figura que muestra los pasos de bachata">
     <defs><linearGradient id="floorGrad" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="390" y2="0"><stop offset="0" stop-color="#587087" stop-opacity="0"/><stop offset=".5" stop-color="#587087" stop-opacity=".9"/><stop offset="1" stop-color="#587087" stop-opacity="0"/></linearGradient></defs>
     <line x1="10" y1="391" x2="390" y2="391" stroke="url(#floorGrad)" stroke-width="2"/>
@@ -32,6 +34,8 @@
      <line id="footL" class="foot"/><line id="footR" class="foot"/>
     </g>
    </svg>
+   <svg id="arrowR" class="arrow" viewBox="0 0 100 160" aria-hidden="true"><path d="M4 52h50V14l42 66-42 66v-38H4z"/></svg>
+  </div>
   </div>
  </section>
  <footer class="controls">
@@ -45,15 +49,24 @@
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),audio=$('audio');
-let markers=[],audioUrl=null,lastBeatKey='',lastStatus='';
+let markers=[],cycles=[],audioUrl=null,lastBeatKey='',lastStatus='';
 const duration=()=>Number.isFinite(audio.duration)?audio.duration:0;
 const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 function status(message){if(message!==lastStatus){$('status').textContent=message;lastStatus=message}}
-function cycleAt(i){if(markers[i].cycle>0)return markers[i].cycle;if(i===0&&markers.length>1)return markers[1].time-markers[0].time;for(let j=i-1;j>=0;j--)if(markers[j].cycle>0)return markers[j].cycle;return markers.length>1?markers[1].time-markers[0].time:0}
+function tempoMap(ms){ // ms ordenadas. Cada tramo entre dos «1» define su propia velocidad.
+ const n=ms.length,cycles=new Array(n).fill(0),turns=new Array(n).fill(0),gaps=ms.slice(0,-1).map((m,i)=>ms[i+1].time-m.time),minGap=gaps.length?Math.min(...gaps):0;let ref=0;
+ for(let i=0;i<n;i++){
+  if(ms[i].cycle>0)cycles[i]=ms[i].cycle; // duración fijada a mano
+  else if(i<n-1){const k=Math.max(1,Math.round(gaps[i]/(ref||minGap)));cycles[i]=gaps[i]/k;turns[i]=k} // vueltas que caben hasta el siguiente «1»
+  else cycles[i]=ref; // última marca: se mantiene el último ritmo
+  if(cycles[i]>0)ref=cycles[i];
+ }
+ return {cycles,turns};
+}
 function beatAt(t){
  if(!markers.length||t<markers[0].time)return null;
  let i=markers.length-1;while(i>0&&t<markers[i].time)i--;
- const cycle=cycleAt(i),steps=markers[i].steps;if(cycle<=0)return {beat:1,steps,cycle:0,bar:0,phase:0,marker:i};
+ const cycle=cycles[i],steps=markers[i].steps;if(cycle<=0)return {beat:1,steps,cycle:0,bar:0,phase:0,marker:i};
  const interval=cycle/steps,raw=Math.floor((t-markers[i].time)/interval+1e-7);
  return {beat:raw%steps+1,steps,cycle,bar:Math.floor(raw/steps),phase:(t-markers[i].time)/interval-raw,marker:i};
 }
@@ -122,11 +135,19 @@ function drawFigure(b){
  $('footL').classList.toggle('tap',cur.tap==='L');$('footR').classList.toggle('tap',cur.tap==='R');
  $('footL').classList.toggle('step',!!b&&cur.mover==='L'&&!cur.tap);$('footR').classList.toggle('step',!!b&&cur.mover==='R'&&!cur.tap);
 }
+function drawArrows(b){ // la flecha del lado al que va el cuerpo late en cada tiempo; en la punta se anuncia el cambio
+ const L=$('arrowL'),R=$('arrowR');
+ if(!b){for(const a of [L,R]){a.style.opacity='.08';a.style.transform='';a.classList.remove('tap')}return}
+ const idx=stepIndex(b),k=idx%4,goLeft=idx<4,on=goLeft?L:R,off=goLeft?R:L,p=b.cycle?b.phase:0;
+ const pulse=reduceMotion||!b.cycle?1:(1-p)**1.4,shift=reduceMotion?0:(goLeft?-1:1)*14*(1-p);
+ on.style.opacity=n(.22+.78*pulse);on.style.transform=`translateX(${n(shift)}px)`;on.classList.toggle('tap',k===3);
+ off.style.opacity=n(k===3&&!reduceMotion&&p>.5?.08+.5*(p-.5)/.5:.08);off.style.transform='';off.classList.remove('tap');
+}
 function render(){
  const b=beatAt(audio.currentTime),key=b?`${b.marker}:${b.bar}:${b.beat}`:'';
  $('number').textContent=b?b.beat:'—';$('number').classList.toggle('waiting',!b);
  if(key!==lastBeatKey){updateDirection(b);lastBeatKey=key}
- drawFigure(b);
+ drawFigure(b);drawArrows(b);
  $('countHint').textContent=!markers.length?'Carga el JSON de marcas':audio.currentTime<markers[0].time?'Esperando el primer «1»':b?.cycle?'Sigue el ritmo':'Indica otra marca o la duración de una vuelta';
  $('current').textContent=fmt(audio.currentTime);$('duration').textContent=fmt(duration());$('seek').value=duration()?Math.round(audio.currentTime/duration()*1000):0;
  requestAnimationFrame(render);
@@ -136,7 +157,7 @@ $('jsonFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;tr
  const data=JSON.parse(await file.text());if(!Array.isArray(data.markers)||!data.markers.length)throw Error('El JSON no contiene marcas.');
  const next=data.markers.map(m=>({time:Number(m.time),steps:Number(m.steps??8),cycle:m.cycle==null?null:Number(m.cycle)})).sort((a,b)=>a.time-b.time);
  if(next.some((m,i)=>!Number.isFinite(m.time)||m.time<0||![4,8].includes(m.steps)||m.cycle!==null&&(!Number.isFinite(m.cycle)||m.cycle<=0)||i&&m.time<=next[i-1].time))throw Error('El JSON contiene marcas no válidas.');
- markers=next;lastBeatKey='';$('jsonName').textContent=file.name;status(`${markers.length} marcas cargadas.`);
+ markers=next;cycles=tempoMap(markers).cycles;lastBeatKey='';$('jsonName').textContent=file.name;status(`${markers.length} marcas cargadas.`);
  }catch(error){status(error.message||'No se pudo leer el JSON.')}e.target.value=''};
 function toggle(){if(!audio.src)return;if(audio.paused)audio.play().catch(()=>status('No se pudo reproducir el audio.'));else audio.pause()}
 $('play').onclick=toggle;$('back').onclick=()=>audio.currentTime=Math.max(0,audio.currentTime-5);$('forward').onclick=()=>audio.currentTime=Math.min(duration(),audio.currentTime+5);

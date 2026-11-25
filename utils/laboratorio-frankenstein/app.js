@@ -567,7 +567,10 @@ AFRAME.registerComponent('frankenstein-lab', {
     this.add(new THREE.PlaneGeometry(W, D), m.floor, 0, 0, (zBack + zFront) / 2, -Math.PI / 2);
     this.add(new THREE.PlaneGeometry(W, D), m.ceiling, 0, H, (zBack + zFront) / 2, Math.PI / 2);
     this.add(new THREE.PlaneGeometry(W, H), m.wall, 0, H / 2, zBack);
-    this.add(new THREE.PlaneGeometry(W, H), m.wall, 0, H / 2, zFront, 0, Math.PI);
+    // La salida deja un hueco real de 1,5 m para el pasillo.
+    this.add(new THREE.PlaneGeometry((W - 1.5) / 2, H), m.wall, -(W + 1.5) / 4, H / 2, zFront, 0, Math.PI);
+    this.add(new THREE.PlaneGeometry((W - 1.5) / 2, H), m.wall, (W + 1.5) / 4, H / 2, zFront, 0, Math.PI);
+    this.add(new THREE.PlaneGeometry(1.5, H - 2.4), m.wall, 0, 2.4 + (H - 2.4) / 2, zFront, 0, Math.PI);
     this.add(new THREE.PlaneGeometry(D, H), m.wallSide, -X, H / 2, (zBack + zFront) / 2, 0, Math.PI / 2);
     this.add(new THREE.PlaneGeometry(D, H), m.wallSide, X, H / 2, (zBack + zFront) / 2, 0, -Math.PI / 2);
 
@@ -1021,10 +1024,19 @@ AFRAME.registerComponent('frankenstein-lab', {
     const m = this.mat;
     // Puerta tras el usuario
     const z = ROOM.zFront - 0.05;
-    this.add(new THREE.BoxGeometry(1.3, 2.4, 0.08), m.darkWood, 0, 1.2, z);
-    [0.5, 1.9].forEach((y) => this.add(new THREE.BoxGeometry(1.3, 0.08, 0.1), m.iron, 0, y, z - 0.01));
-    this.add(new THREE.TorusGeometry(0.07, 0.012, 8, 20), m.iron, 0.45, 1.1, z - 0.07);
+    this.door = new THREE.Group();
+    this.root.add(this.door);
+    this.add(new THREE.BoxGeometry(1.3, 2.4, 0.08), m.darkWood, 0, 1.2, z, 0, 0, 0, this.door);
+    [0.5, 1.9].forEach((y) => this.add(new THREE.BoxGeometry(1.3, 0.08, 0.1), m.iron, 0, y, z - 0.01, 0, 0, 0, this.door));
+    this.add(new THREE.TorusGeometry(0.07, 0.012, 8, 20), m.iron, 0.45, 1.1, z - 0.07, 0, 0, 0, this.door);
     this.add(new THREE.BoxGeometry(1.5, 0.15, 0.15), new THREE.MeshStandardMaterial({ color: '#2b2622', roughness: 1 }), 0, 2.47, z);
+    const voidMat = new THREE.MeshBasicMaterial({ color: '#030405', side: THREE.DoubleSide });
+    this.add(new THREE.PlaneGeometry(1.5, 2.4), voidMat, 0, 1.2, z + 3, 0, Math.PI);
+    const corridor = new THREE.MeshStandardMaterial({ color: '#111613', roughness: 1, side: THREE.DoubleSide });
+    this.add(new THREE.PlaneGeometry(1.5, 3), corridor, 0, 0, z + 1.5, -Math.PI / 2);
+    this.add(new THREE.PlaneGeometry(3, 2.4), corridor, -0.75, 1.2, z + 1.5, 0, Math.PI / 2);
+    this.add(new THREE.PlaneGeometry(3, 2.4), corridor, 0.75, 1.2, z + 1.5, 0, -Math.PI / 2);
+    this.add(new THREE.PlaneGeometry(1.5, 3), corridor, 0, 2.4, z + 1.5, Math.PI / 2);
 
     // Antorchas en las paredes laterales
     [[-ROOM.x + 0.12, 1.0], [ROOM.x - 0.12, -4.0], [-ROOM.x + 0.12, -4.2]].forEach(([x, tz]) => {
@@ -1294,7 +1306,9 @@ AFRAME.registerComponent('thumb-locomotion', {
     const rig = this.rig.object3D;
     rig.position.addScaledVector(dir, 1.6 * dt);
     rig.position.x = THREE.MathUtils.clamp(rig.position.x, -ROOM.x + 0.4, ROOM.x - 0.4);
-    rig.position.z = THREE.MathUtils.clamp(rig.position.z, ROOM.zBack + 0.5, ROOM.zFront - 0.4);
+    const escape = this.el.components['escape-room'];
+    const exitLimit = escape && escape.open ? ROOM.zFront + 2.5 : ROOM.zFront - 0.4;
+    rig.position.z = THREE.MathUtils.clamp(rig.position.z, ROOM.zBack + 0.5, exitLimit);
   }
 });
 

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
     <script src="app.js"></script>
+    <script src="escape.js"></script>
   </head>
   <body>
     <main id="landing" aria-label="Inicio del laboratorio de Frankenstein">
@@ -23,8 +24,9 @@
         <li>Pulsa <strong>Entrar al laboratorio</strong> (mejor con sonido).</li>
         <li>Camina por la habitación o usa el joystick izquierdo para moverte.</li>
         <li>Joystick derecho: girar a saltos.</li>
+        <li>Acércate a las cuatro pistas brillantes, míralas y pulsa el gatillo para investigarlas. Cuando completes las cuatro, atraviesa la puerta.</li>
       </ol>
-      <p class="hint">En el ordenador: WASD para andar y arrastra con el ratón para mirar.</p>
+      <p class="hint">En el ordenador: WASD para andar, arrastra con el ratón para mirar y haz clic o pulsa E para investigar.</p>
     </main>
 
     <a-scene
@@ -36,6 +38,7 @@
       xr-mode-ui="XRMode: vr"
       frankenstein-lab
       thumb-locomotion
+      escape-room
     >
       <a-entity id="rig" position="0 0 1.3">
         <a-camera id="cam" position="0 1.6 0" look-controls="pointerLockEnabled: false" wasd-controls="acceleration: 25"></a-camera>

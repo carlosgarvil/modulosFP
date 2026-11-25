@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#030607" />
+  <title>El archivo oculto · EscapeVroom</title>
+  <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
+  <script src="room.js"></script>
+  <style>
+    body { margin: 0; background: #030607; color: #e5e9df; font: 16px/1.5 system-ui, sans-serif; }
+    #intro { position: fixed; z-index: 5; top: 5%; left: 50%; transform: translateX(-50%); width: min(90%, 36rem); padding: 1.5rem; border: 1px solid #647c69; border-radius: 1rem; background: #07100fef; }
+    h1 { margin: 0.4rem 0; font-family: Georgia, serif; }
+    a { color: #d5ef9b; }
+    body.xr-active #intro { display: none; }
+    .a-enter-vr-button { background: #6b8d5e !important; }
+  </style>
+</head>
+<body>
+  <main id="intro">
+    <small>ESCAPEVROOM · SEGUNDA SALA</small>
+    <h1>El archivo oculto</h1>
+    <p>Has atravesado el pasillo negro. Los documentos del doctor te esperan al fondo. En las gafas, pulsa «Entrar en VR» para continuar; el navegador inicia una sesión nueva al cargar esta sala.</p>
+    <p>Joystick izquierdo para moverte. En pantalla: WASD y ratón. <a href="../laboratorio-frankenstein/">Volver al laboratorio</a>.</p>
+  </main>
+  <a-scene second-room renderer="antialias: true; colorManagement: true" background="color: #030607" webxr="requiredFeatures: local-floor" xr-mode-ui="XRMode: vr">
+    <a-entity id="rig" position="0 0 0">
+      <a-camera id="cam" position="0 1.6 0" wasd-controls="acceleration: 20"></a-camera>
+      <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: lowPoly"></a-entity>
+      <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: lowPoly"></a-entity>
+    </a-entity>
+    <a-light type="ambient" color="#8ca399" intensity="0.7"></a-light>
+    <a-light type="point" position="0 2.8 -5" color="#d7d3a0" intensity="2" distance="8"></a-light>
+
+    <a-plane position="0 0 -4" rotation="-90 0 0" width="7" height="11" color="#1b211e"></a-plane>
+    <a-plane position="0 3.2 -4" rotation="90 0 0" width="7" height="11" color="#0c100f"></a-plane>
+    <a-plane position="-3.5 1.6 -4" rotation="0 90 0" width="11" height="3.2" color="#28312a"></a-plane>
+    <a-plane position="3.5 1.6 -4" rotation="0 -90 0" width="11" height="3.2" color="#28312a"></a-plane>
+    <a-plane position="0 1.6 -9.5" width="7" height="3.2" color="#263029"></a-plane>
+    <a-plane position="0 1.6 1.5" rotation="0 180 0" width="7" height="3.2" color="#101614"></a-plane>
+
+    <a-box position="-2.5 1.2 -6.5" width="0.7" height="2.4" depth="2.8" color="#4a382a"></a-box>
+    <a-box position="2.5 1.2 -6.5" width="0.7" height="2.4" depth="2.8" color="#4a382a"></a-box>
+    <a-box position="0 0.9 -6" width="2.3" height="0.15" depth="1.1" color="#493a2a"></a-box>
+    <a-box position="0 0.45 -6" width="1.9" height="0.8" depth="0.8" color="#292b28"></a-box>
+    <a-plane position="0 1.02 -5.98" rotation="-90 0 0" width="0.8" height="0.55" color="#d5c69c"></a-plane>
+    <a-text value="ARCHIVO DE INGOLSTADT" align="center" color="#d8e6ca" width="3.3" position="0 2.35 -9.38"></a-text>
+    <a-text value="El doctor dejo un ultimo registro.\nEsta sala inicia la siguiente fase." align="center" color="#18201b" width="1.1" position="0 1.035 -5.98" rotation="-90 0 0"></a-text>
+  </a-scene>
+</body>
+</html>

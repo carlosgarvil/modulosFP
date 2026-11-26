@@ -4,12 +4,14 @@
 AFRAME.registerComponent('escape-room', {
   init() {
     this.clues = [
-      { title: 'Cuaderno del doctor', detail: 'La vida necesita una chispa, pero primero hay que medirla.', point: [-3.15, 1.15, -0.9] },
-      { title: 'Archivo de la criatura', detail: 'Las tres lecturas deben coincidir antes de la descarga.', point: [3.3, 1.65, -2.1] },
-      { title: 'Panel de control', detail: 'La palanca libera la corriente cuando el circuito está completo.', point: [2.5, 1.55, -4.3] },
-      { title: 'Mesa de operaciones', detail: 'Los electrodos conducen la energía hasta la criatura.', point: [0, 1.15, -1.8] }
+      { title: 'Cuaderno del doctor', detail: 'Secuencia de activación: 1. ROJO.', point: [-3.15, 1.15, -0.9] },
+      { title: 'Archivo de la criatura', detail: 'Secuencia de activación: 2. AZUL.', point: [3.3, 1.65, -2.1] },
+      { title: 'Panel de control', detail: 'Secuencia de activación: 3. VERDE.', point: [2.5, 1.55, -4.3] },
+      { title: 'Mesa de operaciones', detail: 'Secuencia de activación: 4. AMARILLO.', point: [0, 1.15, -1.8] }
     ];
     this.open = false;
+    this.sequence = ['rojo', 'azul', 'verde', 'amarillo'];
+    this.input = [];
     this.transitioning = false;
     this.head = new THREE.Vector3();
     this.target = new THREE.Vector3();
@@ -105,18 +107,57 @@ AFRAME.registerComponent('escape-room', {
   inspect() {
     if (!this.lab || this.open) return;
     const clue = this.nearestClue();
-    if (!clue) return;
+    if (!clue) {
+      const button = this.nearestButton();
+      if (button) this.pressButton(button);
+      return;
+    }
     clue.unlocked = true;
     clue.marker.visible = false;
     const count = this.clues.filter((item) => item.unlocked).length;
     this.messageUntil = performance.now() + 6500;
     this.renderPrompt(`${clue.title}: ${clue.detail} (${count}/4)`);
-    if (count === this.clues.length) {
+    if (count === this.clues.length) this.renderPrompt('Ya conoces las cuatro pistas. Pulsa los colores en orden en la mesa izquierda.');
+  },
+
+  nearestButton() {
+    const camera = document.getElementById('cam').object3D;
+    camera.getWorldPosition(this.head);
+    camera.getWorldQuaternion(this.tmpQuaternion);
+    this.forward.set(0, 0, -1).applyQuaternion(this.tmpQuaternion);
+    let selected = null;
+    let best = Infinity;
+    for (const button of this.lab.colorButtons) {
+      button.mesh.getWorldPosition(this.target);
+      const distance = this.head.distanceTo(this.target);
+      if (distance > 1.65) continue;
+      const facing = this.target.clone().sub(this.head).normalize().dot(this.forward);
+      if (facing > 0.9 && distance < best) { selected = button; best = distance; }
+    }
+    return selected;
+  },
+
+  pressButton(button) {
+    const count = this.clues.filter((item) => item.unlocked).length;
+    this.messageUntil = performance.now() + 3500;
+    if (count < this.clues.length) {
+      this.renderPrompt(`Necesitas investigar las cuatro pistas antes de activar la mesa. Pistas: ${count}/4`);
+      return;
+    }
+    button.mesh.position.y = 1.035;
+    setTimeout(() => { button.mesh.position.y = 1.08; }, 180);
+    if (button.name !== this.sequence[this.input.length]) {
+      this.input = [];
+      this.renderPrompt('Secuencia incorrecta. Vuelve a empezar por el primer color.');
+      return;
+    }
+    this.input.push(button.name);
+    if (this.input.length === this.sequence.length) {
       this.open = true;
       this.messageUntil = performance.now() + 9000;
-      this.renderPrompt('Circuito completo. La puerta se abre: atraviesa el pasillo negro.');
+      this.renderPrompt('Secuencia correcta. La puerta se abre: atraviesa el pasillo negro.');
       this.lab.lightning(1.4);
-    }
+    } else this.renderPrompt(`Color correcto (${this.input.length}/4). Continúa la secuencia.`);
   },
 
   tick(time, dt) {
@@ -137,7 +178,8 @@ AFRAME.registerComponent('escape-room', {
     const count = this.clues.filter((item) => item.unlocked).length;
     if (this.open) this.renderPrompt('Atraviesa el pasillo negro para llegar a la segunda sala.');
     else if (clue) this.renderPrompt(`Pulsa el gatillo, haz clic o pulsa E para investigar. Pistas: ${count}/4`);
-    else this.renderPrompt(`Acércate a los objetos brillantes y míralos. Pistas: ${count}/4`);
+    else if (this.nearestButton()) this.renderPrompt(count === 4 ? `Pulsa los colores en orden. Progreso: ${this.input.length}/4` : `Primero investiga las cuatro pistas. Pistas: ${count}/4`);
+    else this.renderPrompt(count === 4 ? 'Busca la mesa de pulsadores a la izquierda.' : `Acércate a los objetos brillantes y míralos. Pistas: ${count}/4`);
   },
 
   remove() {

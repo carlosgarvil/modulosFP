@@ -492,6 +492,7 @@ AFRAME.registerComponent('frankenstein-lab', {
       this.buildApparatus();
       this.buildCoils();
       this.buildBench();
+      this.buildColorTable();
       this.buildShelves();
       this.buildPanel();
       this.buildDecor();
@@ -878,6 +879,24 @@ AFRAME.registerComponent('frankenstein-lab', {
     // Pluma y tintero
     this.add(new THREE.CylinderGeometry(0.03, 0.035, 0.05, 16), new THREE.MeshStandardMaterial({ color: '#0d0d12', roughness: 0.2 }), -0.2, 0.96, 0.4, 0, 0, 0, g);
     this.add(new THREE.ConeGeometry(0.012, 0.22, 6), m.paper, -0.2, 1.06, 0.42, 0.4, 0, 0.2, g);
+  },
+
+  buildColorTable() {
+    const m = this.mat;
+    const g = new THREE.Group();
+    g.position.set(-2.75, 0, 2.15);
+    this.root.add(g);
+    this.add(new THREE.BoxGeometry(1.55, 0.12, 0.8), m.wood, 0, 0.85, 0, 0, 0, 0, g);
+    const leg = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+    [-0.65, 0.65].forEach((x) => [-0.3, 0.3].forEach((z) => this.add(leg, m.darkWood, x, 0.4, z, 0, 0, 0, g)));
+    this.add(new THREE.BoxGeometry(1.35, 0.06, 0.53), m.iron, 0, 0.95, 0, 0, 0, 0, g);
+    this.colorButtons = [];
+    [['rojo', '#ef4444'], ['azul', '#3b82f6'], ['verde', '#84cc16'], ['amarillo', '#facc15']].forEach(([name, color], i) => {
+      const x = -0.48 + i * 0.32;
+      this.add(new THREE.CylinderGeometry(0.13, 0.13, 0.055, 24), m.brass, x, 1.01, 0, 0, 0, 0, g);
+      const cap = this.add(new THREE.CylinderGeometry(0.095, 0.095, 0.075, 24), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.35 }), x, 1.08, 0, 0, 0, 0, g);
+      this.colorButtons.push({ name, mesh: cap });
+    });
   },
 
   candle(parent, x, y, z, h = 0.1) {
